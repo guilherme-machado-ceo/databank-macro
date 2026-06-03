@@ -90,6 +90,7 @@ Este repositório agora inclui um protótipo de dashboard em Streamlit alinhado 
 O dashboard já está disponível para acesso público em:
 
 https://databank-fintech.streamlit.app/
+https://databank-fintech-ecd6t4fje2j2uksrnin48o.streamlit.app/
 
 ### Como executar localmente
 
