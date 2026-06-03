@@ -71,6 +71,29 @@ O Data Bank atua como:
 - 📈 Score proprietário baseado em uso, risco e valor
 - 🌱 Aplicação multissetorial (agro, saúde, educação, energia, etc.)
 
+
+---
+
+## 🖥️ Dashboard Interativo em Streamlit
+
+Este repositório agora inclui um protótipo de dashboard em Streamlit alinhado ao MVP prometido pelo Data Bank:
+
+- Upload de datasets em CSV, Excel ou JSON
+- Uso de uma base demonstrativa quando nenhum arquivo é enviado
+- Cálculo simulado de Data Asset Score
+- Estimativa de valuation, valor tokenizável e limite de crédito informacional
+- Projeção de monetização por fonte de receita
+- Checklist inicial de governança, custódia e conformidade LGPD
+
+### Como executar localmente
+
+```bash
+pip install -r requirements.txt
+streamlit run streamlit_app.py
+```
+
+> Observação: os cálculos são simulações para pré-MVP e descoberta de produto. Eles não substituem avaliação financeira, jurídica, contábil ou regulatória.
+
 ---
 
 ## 🔒 Licença
