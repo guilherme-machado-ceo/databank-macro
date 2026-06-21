@@ -149,7 +149,7 @@ def main():
         print(f"    #{i} {r['chain_name']:20s} score={r['score']:>8.2f} risco_q={r['risco_quantico']:.2f}")
 
     print(f"\n{'=' * 70}")
-    print("  DataBank PCQ com DADOS REAIS: OK")
+    print("  DataBank Macro com DADOS REAIS: OK")
     print(f"{'=' * 70}\n")
 
 

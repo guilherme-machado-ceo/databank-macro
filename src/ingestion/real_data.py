@@ -1,5 +1,5 @@
 """
-DataBank PCQ — Real Data Connector
+DataBank Macro — Real Data Connector
 ====================================
 Integra APIs gratuitas para dados econômicos, climáticos e financeiros reais.
 

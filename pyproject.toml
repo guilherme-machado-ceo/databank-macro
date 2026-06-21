@@ -3,14 +3,18 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "databank-pcq"
+name = "databank-macro"
 version = "3.0.0"
-description = "DataBank PCQ — Post-Quantum Custody & Glocal Economic Intelligence"
+description = "DataBank Macro — Inteligência de Mercado para PMEs"
 requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.24.0", "pandas>=2.0.0", "scipy>=1.10.0",
     "scikit-learn>=1.3.0", "cryptography>=42.0.0",
     "requests>=2.31.0", "python-dotenv>=1.0.0",
     "pydantic>=2.0.0", "streamlit>=1.30.0",
-    "plotly>=5.18.0", "httpx>=0.26.0",
+    "plotly>=5.18.0", "httpx>=0.26.0", "yfinance>=0.2.0",
 ]
+
+[project.urls]
+Homepage = "https://guilherme-machado-ceo.github.io/DataBank-Macro"
+Repository = "https://github.com/guilherme-machado-ceo/DataBank-Macro"
