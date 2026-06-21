@@ -49,7 +49,7 @@ class CustodiaPCQ:
         sensibilidade = metadata.get("sensibilidade", "confidencial")
         exposicao = self._calcular_exposicao(metadata)
         validade = max(int(VALIDADE_ANOS.get(sensibilidade, 10) * (1 - exposicao * 0.5)), 2)
-        data_rec = datetime.utcnow() + timedelta(days=validade * 365)
+        data_rec = datetime.now(timezone.utc) + timedelta(days=validade * 365)
 
         chave_aes = AESGCM.generate_key(bit_length=256)
         aesgcm = AESGCM(chave_aes)
