@@ -291,7 +291,7 @@ def main() -> None:
     with st.sidebar:
         if LOGO_PATH.exists():
             st.image(str(LOGO_PATH), width=130)
-        st.title("Data Bank")
+        st.title("DataBank")
         st.caption("Dashboard open source de commodities, macroeconomia e transição energética. 17 vetores reais, 49 catalogados.")
 
         uploaded_file = st.file_uploader(
