@@ -7,8 +7,12 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
+# Importa o motor real do projeto
+from src.core.campos_granulares import REGISTRO_CAMPOS
+from src.ingestion.real_data import IngestorReal
 
-APP_TITLE = "Data Bank – Dashboard Interativo"
+
+APP_TITLE = "Data Bank – Dashboard de Vetores Reais"
 LOGO_PATH = Path("logo-databank.png")
 
 SECTOR_PROFILES = {
@@ -46,21 +50,11 @@ def build_demo_dataset() -> pd.DataFrame:
             "cliente_id": range(1001, 1051),
             "setor": ["Agro", "Saúde", "Financeiro", "Varejo", "Energia"] * 10,
             "receita_mensal": [
-                12500,
-                18800,
-                32100,
-                22100,
-                27800,
-                14100,
-                20100,
-                35400,
-                24500,
-                30100,
-            ]
-            * 5,
+                12500, 18800, 32100, 22100, 27800,
+                14100, 20100, 35400, 24500, 30100,
+            ] * 5,
             "score_relacionamento": [72, 88, 91, 77, 84, 69, 86, 94, 81, 89] * 5,
-            "consentimento_lgpd": [True, True, True, False, True, True, False, True, True, True]
-            * 5,
+            "consentimento_lgpd": [True, True, True, False, True, True, False, True, True, True] * 5,
             "regiao": ["Sul", "Sudeste", "Nordeste", "Centro-Oeste", "Norte"] * 10,
         }
     )
@@ -132,12 +126,7 @@ def calculate_scores(metrics: DatasetMetrics, sector: str, governance_level: int
     }
 
 
-def estimate_valuation(
-    metrics: DatasetMetrics,
-    scores: dict[str, float],
-    sector: str,
-    revenue_potential: float,
-) -> dict[str, float]:
+def estimate_valuation(metrics: DatasetMetrics, scores: dict[str, float], sector: str, revenue_potential: float) -> dict[str, float]:
     profile = SECTOR_PROFILES[sector]
     density_factor = max(metrics.numeric_columns + metrics.categorical_columns * 0.55, 1)
     base_value = metrics.rows * density_factor * profile["base_multiplier"] * 2.85
@@ -154,15 +143,11 @@ def estimate_valuation(
     }
 
 
-def render_metric_card(label: str, value: str, help_text: str | None = None) -> None:
-    st.metric(label, value, help=help_text)
-
-
 def render_score_radar(scores: dict[str, float]) -> None:
     radar_rows = [
         {"Dimensão": key, "Score": value}
         for key, value in scores.items()
-        if key != "Data Asset Score" and key != "Risco residual LGPD"
+        if key not in ("Data Asset Score", "Risco residual LGPD")
     ]
     chart = (
         alt.Chart(pd.DataFrame(radar_rows))
@@ -234,6 +219,72 @@ def render_compliance_checklist(scores: dict[str, float], sector: str) -> None:
     st.dataframe(checklist, use_container_width=True, hide_index=True)
 
 
+@st.cache_data(ttl=3600, show_spinner="Coletando dados reais das APIs...")
+def coletar_vetores_reais():
+    """Coleta (ou lê do cache) todos os 41 vetores do catálogo."""
+    ingestor = IngestorReal()
+    resultados = ingestor.coletar_todos(usar_cache=True, max_age_hours=24)
+    resumo = ingestor.resumo(resultados)
+    return resultados, resumo
+
+
+def render_vetores_reais():
+    st.subheader("Vetores do catálogo com fontes reais")
+    st.caption(
+        "Cada linha mostra o valor mais recente, a fonte real e a última atualização. "
+        "Vetores sem API gratuita aparecem como 'Fonte pendente'."
+    )
+
+    resultados, resumo = coletar_vetores_reais()
+
+    total = resumo["total_vetores"]
+    reais = resumo["com_dados_reais"]
+    pendentes = resumo["pendentes"]
+
+    kpi_cols = st.columns(3)
+    with kpi_cols[0]:
+        st.metric("Total de vetores", total)
+    with kpi_cols[1]:
+        st.metric("Com dados reais", reais)
+    with kpi_cols[2]:
+        st.metric("Pendentes", pendentes)
+
+    st.progress(reais / total, text=f"{reais} de {total} vetores com dados reais")
+
+    for campo_enum, lista in resultados.items():
+        with st.expander(f"{campo_enum.name} ({sum(1 for s in lista if s.disponivel)}/{len(lista)} reais)"):
+            for sr in lista:
+                cols = st.columns([2, 1.2, 1.5, 1.5])
+                with cols[0]:
+                    st.markdown(f"**{sr.nome}**  `<{sr.vetor_id}>`")
+                with cols[1]:
+                    if sr.disponivel:
+                        ultimo = sr.serie.iloc[-1]
+                        st.metric(label="Valor atual", value=f"{ultimo:,.4f}")
+                    else:
+                        st.markdown(":gray[Fonte pendente]")
+                with cols[2]:
+                    if sr.disponivel:
+                        fonte = sr.fonte or "—"
+                        st.markdown(f"Fonte: `{fonte}`")
+                        if sr.cache:
+                            st.caption(f"_:orange[cache: {sr.atualizado_em}]_")
+                        else:
+                            st.caption(f"_:green[atualizado: {sr.atualizado_em}]_")
+                    else:
+                        st.caption(f"_:red[{sr.erro or 'sem fonte gratuita'}]_")
+                with cols[3]:
+                    if sr.disponivel:
+                        df = pd.DataFrame({"Data": sr.serie.index, "Valor": sr.serie.values})
+                        chart = (
+                            alt.Chart(df)
+                            .mark_line()
+                            .encode(x="Data:T", y="Valor:Q", tooltip=["Data", alt.Tooltip("Valor:Q", format=",.4f")])
+                            .properties(height=120)
+                        )
+                        st.altair_chart(chart, use_container_width=True)
+
+
 def main() -> None:
     st.set_page_config(page_title=APP_TITLE, page_icon="🏦", layout="wide")
 
@@ -258,12 +309,20 @@ def main() -> None:
         )
         projection_months = st.slider("Horizonte de projeção", 6, 36, 18)
 
-    st.title("🏦 Data Bank – Dashboard Interativo")
+    st.title("🏦 Data Bank – Dashboard de Vetores Reais")
     st.markdown(
-        "Transforme um dataset em uma visão executiva de **score**, **valuation simulado**, "
-        "**monetização**, **tokenização**, **crédito informacional** e **riscos LGPD**."
+        "Painel de honestidade radical: cada vetor do catálogo mostra sua **fonte real**, "
+        "**valor atual** e **última atualização**. Sem simulações mascaradas."
     )
 
+    tab_vetores, tab_overview, tab_score, tab_finance, tab_compliance, tab_data = st.tabs(
+        ["Vetores Reais", "Visão geral", "Score", "Monetização", "Governança", "Dataset"]
+    )
+
+    with tab_vetores:
+        render_vetores_reais()
+
+    # Aba de valuation/simulação mantida com avisos claros
     if uploaded_file is not None:
         df = load_uploaded_dataset(uploaded_file)
         dataset_source = f"Dataset carregado: {uploaded_file.name}"
@@ -275,42 +334,33 @@ def main() -> None:
     scores = calculate_scores(metrics, sector, governance_level)
     valuation = estimate_valuation(metrics, scores, sector, revenue_potential)
 
-    st.info(dataset_source)
-
-    kpi_cols = st.columns(4)
-    with kpi_cols[0]:
-        render_metric_card("Data Asset Score", f"{scores['Data Asset Score']:.1f}/100", "Score proprietário simulado.")
-    with kpi_cols[1]:
-        render_metric_card("Valuation estimado", f"R$ {valuation['valuation']:,.2f}")
-    with kpi_cols[2]:
-        render_metric_card("Valor tokenizável", f"R$ {valuation['tokenizable_value']:,.2f}")
-    with kpi_cols[3]:
-        render_metric_card("Limite de crédito", f"R$ {valuation['credit_limit']:,.2f}")
-
-    tab_overview, tab_score, tab_finance, tab_compliance, tab_data = st.tabs(
-        ["Visão geral", "Score", "Monetização", "Governança", "Dataset"]
-    )
-
     with tab_overview:
+        st.info(dataset_source)
+        st.warning(
+            "As métricas abaixo são uma **simulação de valuation** baseada em regras arbitrárias. "
+            "Não representam laudo financeiro, jurídico ou contábil."
+        )
+
+        kpi_cols = st.columns(4)
+        with kpi_cols[0]:
+            st.metric("Data Asset Score", f"{scores['Data Asset Score']:.1f}/100")
+        with kpi_cols[1]:
+            st.metric("Valuation estimado", f"R$ {valuation['valuation']:,.2f}")
+        with kpi_cols[2]:
+            st.metric("Valor tokenizável", f"R$ {valuation['tokenizable_value']:,.2f}")
+        with kpi_cols[3]:
+            st.metric("Limite de crédito", f"R$ {valuation['credit_limit']:,.2f}")
+
         st.subheader("Resumo operacional")
         c1, c2, c3, c4 = st.columns(4)
         with c1:
-            render_metric_card("Linhas", f"{metrics.rows:,}")
+            st.metric("Linhas", f"{metrics.rows:,}")
         with c2:
-            render_metric_card("Colunas", f"{metrics.columns:,}")
+            st.metric("Colunas", f"{metrics.columns:,}")
         with c3:
-            render_metric_card("Completude", f"{metrics.completeness:.1f}%")
+            st.metric("Completude", f"{metrics.completeness:.1f}%")
         with c4:
-            render_metric_card("Tamanho estimado", f"{metrics.estimated_size_mb:.2f} MB")
-
-        st.subheader("Como este MVP traduz a proposta do repositório")
-        st.markdown(
-            "- **Upload seguro de datasets:** entrada via CSV, Excel ou JSON para simular a ingestão inicial.\n"
-            "- **Classificação + valuation automático:** cálculo de métricas, score e valor justo estimado por setor.\n"
-            "- **Dashboard com score de dados:** KPIs e gráficos para avaliação executiva.\n"
-            "- **Monetização e financiamento:** projeção de receitas, tokenização e limite de crédito informacional.\n"
-            "- **Governança LGPD:** checklist de controles e risco residual por maturidade informada."
-        )
+            st.metric("Tamanho estimado", f"{metrics.estimated_size_mb:.2f} MB")
 
     with tab_score:
         st.subheader("Score proprietário de ativos de dados")
@@ -321,7 +371,7 @@ def main() -> None:
             st.metric("Risco residual LGPD", f"{scores['Risco residual LGPD']:.1f}/100")
             st.metric("Demanda de mercado", f"{scores['Demanda de mercado']:.1f}/100")
             st.metric("Duplicidades", f"{metrics.duplicates:,}")
-            st.caption("Pontuação simulada para pré-MVP; não representa laudo financeiro, jurídico ou contábil.")
+            st.caption("Pontuação simulada para pré-MVP.")
 
     with tab_finance:
         st.subheader("Projeção de monetização")

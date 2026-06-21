@@ -1,37 +1,61 @@
 """
 DataBank PCQ — Real Data Connector
 ====================================
-Integra APIs gratuitas para dados econômicos reais.
-Fallback para simulação apenas se API falhar.
+Integra APIs gratuitas para dados econômicos, climáticos e financeiros reais.
 
-APIs: BCB (BR), yfinance (global), CoinGecko (crypto), Open-Meteo (clima)
+Regra de honestidade:
+- Se a API gratuita estiver disponível e retornar dados, usamos o dado real.
+- Se a API falhar ou não existir fonte gratuita conhecida, retornamos None.
+- Nenhuma simulação é gerada como se fosse dado real.
 
-Autor: Guilherme Gonçalves Machado | Hubstry Deep Tech
+APIs utilizadas:
+  BCB, Yahoo Finance, CoinGecko, Open-Meteo, NASA GISS, FRED, IMF, EIA, World Bank
 """
 from __future__ import annotations
 
+import io
 import logging
 import time
-from typing import Optional, Dict, List, Any
-from datetime import datetime, timedelta
 from dataclasses import dataclass
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Tuple
 
-import requests
 import pandas as pd
-import numpy as np
+import requests
+
+from src.core.campos_granulares import REGISTRO_CAMPOS, CampoGranular
+from src.ingestion.cache import DataCache
 
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class SerieReal:
+    """Resultado de uma tentativa de coleta real."""
+
+    vetor_id: str
+    campo: CampoGranular
+    nome: str
+    fonte: Optional[str]
+    serie: Optional[pd.Series]
+    atualizado_em: Optional[str] = None
+    erro: Optional[str] = None
+    cache: bool = False
+
+    @property
+    def disponivel(self) -> bool:
+        return self.serie is not None and not self.serie.empty
+
+
 # ============================================================
-# BCB - BANCO CENTRAL DO BRASIL (API Oficial, Gratuita)
+# CONECTORES ESPECIALIZADOS
 # ============================================================
 class BCBConnector:
     """Conector BCB para dados brasileiros reais."""
+
     BASE_URL = "https://api.bcb.gov.br/dados/serie/bcdata.sgs."
 
     def fetch_usd_brl(self, dias: int = 120) -> Optional[pd.Series]:
-        """Taxa de câmbio USD/BRL (série 1 do BCB)."""
         try:
             end = datetime.now().strftime("%d/%m/%Y")
             start = (datetime.now() - timedelta(days=dias)).strftime("%d/%m/%Y")
@@ -42,14 +66,12 @@ class BCBConnector:
             df = pd.DataFrame(dados)
             df["data"] = pd.to_datetime(df["data"], format="%d/%m/%Y")
             df["valor"] = df["valor"].astype(float)
-            df = df.set_index("data").sort_index()
-            return df["valor"]
+            return df.set_index("data")["valor"].sort_index()
         except Exception as e:
             logger.warning(f"BCB USD/BRL falhou: {e}")
             return None
 
     def fetch_selic(self, dias: int = 120) -> Optional[pd.Series]:
-        """Taxa SELIC (série 432)."""
         try:
             end = datetime.now().strftime("%d/%m/%Y")
             start = (datetime.now() - timedelta(days=dias)).strftime("%d/%m/%Y")
@@ -66,15 +88,13 @@ class BCBConnector:
             return None
 
 
-# ============================================================
-# YAHOO FINANCE (via yfinance)
-# ============================================================
 class YahooFinanceConnector:
-    """Conector Yahoo Finance para ações, commodities, índices."""
+    """Conector Yahoo Finance para ações, commodities e índices."""
 
     def __init__(self):
         try:
             import yfinance as yf
+
             self.yf = yf
             self.available = True
         except ImportError:
@@ -82,59 +102,26 @@ class YahooFinanceConnector:
             self.available = False
 
     def fetch_ticker(self, ticker: str, period: str = "6mo") -> Optional[pd.Series]:
-        """Busca série temporal de um ticker."""
         if not self.available:
             return None
         try:
-            time.sleep(0.5)  # Rate limit gentil
+            time.sleep(0.5)
             data = self.yf.Ticker(ticker).history(period=period)
             if data.empty:
                 return None
-            return data["Close"]
+            data.index = data.index.tz_localize(None)
+            return data["Close"].sort_index()
         except Exception as e:
             logger.warning(f"Yahoo Finance {ticker} falhou: {e}")
             return None
 
-    def fetch_commodities(self) -> Dict[str, pd.Series]:
-        """Busca commodities principais."""
-        tickers = {
-            "ouro": "GC=F",      # Gold Futures
-            "brent": "BZ=F",     # Brent Oil Futures
-            "cobre": "HG=F",     # Copper Futures
-            "prata": "SI=F",     # Silver Futures
-        }
-        resultados = {}
-        for nome, ticker in tickers.items():
-            serie = self.fetch_ticker(ticker, period="6mo")
-            if serie is not None:
-                resultados[nome] = serie
-        return resultados
 
-    def fetch_indices(self) -> Dict[str, pd.Series]:
-        """Busca índices globais."""
-        tickers = {
-            "sp500": "^GSPC",
-            "ibovespa": "^BVSP",
-            "dxy": "DX-Y.NYB",  # Dollar Index
-            "nasdaq": "^IXIC",
-        }
-        resultados = {}
-        for nome, ticker in tickers.items():
-            serie = self.fetch_ticker(ticker, period="6mo")
-            if serie is not None:
-                resultados[nome] = serie
-        return resultados
-
-
-# ============================================================
-# COINGECKO (Crypto - API gratuita)
-# ============================================================
 class CoinGeckoConnector:
     """Conector CoinGecko para criptomoedas."""
+
     BASE_URL = "https://api.coingecko.com/api/v3"
 
     def fetch_price_history(self, coin_id: str = "bitcoin", dias: int = 120) -> Optional[pd.Series]:
-        """Histórico de preço de uma criptomoeda."""
         try:
             url = f"{self.BASE_URL}/coins/{coin_id}/market_chart"
             params = {"vs_currency": "usd", "days": str(dias)}
@@ -144,223 +131,956 @@ class CoinGeckoConnector:
             prices = dados["prices"]
             df = pd.DataFrame(prices, columns=["timestamp", "price"])
             df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
-            df = df.set_index("timestamp").sort_index()
-            return df["price"]
+            return df.set_index("timestamp")["price"].sort_index()
         except Exception as e:
             logger.warning(f"CoinGecko {coin_id} falhou: {e}")
             return None
 
-    def fetch_multiple(self, coins: List[str] = None) -> Dict[str, pd.Series]:
-        """Busca múltiplas criptomoedas."""
-        if coins is None:
-            coins = ["bitcoin", "ethereum", "solana"]
-        resultados = {}
-        for coin in coins:
-            serie = self.fetch_price_history(coin, dias=120)
-            if serie is not None:
-                resultados[coin] = serie
-            time.sleep(1.5)  # Rate limit CoinGecko gratuito
-        return resultados
 
-
-# ============================================================
-# OPEN-METEO (Clima - 100% gratuito)
-# ============================================================
 class OpenMeteoConnector:
-    """Conector Open-Meteo para dados climáticos."""
+    """Conector Open-Meteo para dados climáticos locais."""
+
     BASE_URL = "https://api.open-meteo.com/v1/forecast"
 
-    def fetch_climate(self, lat: float, lon: float, days: int = 120) -> Optional[pd.DataFrame]:
-        """Busca dados climáticos (temperatura, precipitação)."""
+    def fetch_temperature(self, lat: float, lon: float, days: int = 92) -> Optional[pd.Series]:
         try:
             params = {
-                "latitude": lat, "longitude": lon,
-                "daily": ["temperature_2m_max", "precipitation_sum"],
-                "past_days": days, "timezone": "auto",
+                "latitude": lat,
+                "longitude": lon,
+                "daily": "temperature_2m_max",
+                "past_days": min(days, 92),
+                "timezone": "auto",
             }
             resp = requests.get(self.BASE_URL, params=params, timeout=30)
             resp.raise_for_status()
             dados = resp.json()
-            if "daily" not in dados:
+            if "daily" not in dados or "temperature_2m_max" not in dados["daily"]:
                 return None
             df = pd.DataFrame(dados["daily"])
             df["time"] = pd.to_datetime(df["time"])
-            return df.set_index("time")
+            return df.set_index("time")["temperature_2m_max"].sort_index()
         except Exception as e:
             logger.warning(f"Open-Meteo falhou: {e}")
             return None
 
 
-# ============================================================
-# ALPHA VANTAGE (Forex, commodities - 25 calls/dia)
-# ============================================================
-class AlphaVantageConnector:
-    """Conector Alpha Vantage (requer API key)."""
-    BASE_URL = "https://www.alphavantage.co/query"
+class NASAGISSConnector:
+    """
+    Conector para temperatura global da NASA GISS.
+    Usa o arquivo CSV público do GISTEMP v4.
+    """
+
+    URL = "https://data.giss.nasa.gov/gistemp/tabledata_v4/GLB.Ts+dSST.csv"
+
+    def fetch_global_temperature(self) -> Optional[pd.Series]:
+        try:
+            resp = requests.get(self.URL, timeout=30)
+            resp.raise_for_status()
+            # O CSV da NASA tem uma linha de titulo antes do cabecalho.
+            df = pd.read_csv(io.StringIO(resp.text), skipinitialspace=True, skiprows=1)
+            year_col = df.columns[0]
+            df = df[df[year_col].apply(lambda x: str(x).strip().isdigit())]
+            df[year_col] = df[year_col].astype(int)
+
+            meses = [c for c in df.columns if c not in (year_col, "J-D", "D-N", "DJF", "MAM", "JJA", "SON")]
+            meses = meses[:12]
+
+            registros = []
+            for _, row in df.iterrows():
+                ano = int(row[year_col])
+                for i, mes in enumerate(meses):
+                    val = row[mes]
+                    if pd.isna(val):
+                        continue
+                    try:
+                        val = float(val)
+                    except (ValueError, TypeError):
+                        continue
+                    if val == -999.0:
+                        continue
+                    dt = pd.Timestamp(year=ano, month=i + 1, day=15)
+                    registros.append((dt, val))
+
+            serie = pd.Series([r[1] for r in registros], index=[r[0] for r in registros]).sort_index()
+            return serie
+        except Exception as e:
+            logger.warning(f"NASA GISS falhou: {e}")
+            return None
+
+
+class FREDConnector:
+    """Conector FRED (Federal Reserve Economic Data)."""
+
+    BASE_URL = "https://api.stlouisfed.org/fred/series/observations"
 
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or "demo"
+        self.api_key = api_key
 
-    def fetch_forex(self, from_sym: str = "USD", to_sym: str = "BRL") -> Optional[pd.Series]:
-        """Par de moedas forex."""
+    def fetch_series(self, series_id: str) -> Optional[pd.Series]:
+        if not self.api_key or self.api_key == "demo":
+            return None
         try:
             params = {
-                "function": "FX_DAILY", "from_symbol": from_sym,
-                "to_symbol": to_sym, "apikey": self.api_key, "outputsize": "compact",
+                "series_id": series_id,
+                "api_key": self.api_key,
+                "file_type": "json",
+                "sort_order": "asc",
             }
             resp = requests.get(self.BASE_URL, params=params, timeout=30)
             resp.raise_for_status()
             dados = resp.json()
-            if "Time Series FX (Daily)" not in dados:
+            obs = dados.get("observations", [])
+            if not obs:
                 return None
-            ts = dados["Time Series FX (Daily)"]
-            df = pd.DataFrame(ts).T
-            df.index = pd.to_datetime(df.index)
-            return df["4. close"].astype(float).sort_index()
+            registros = []
+            for o in obs:
+                try:
+                    val = float(o["value"])
+                except (ValueError, TypeError):
+                    continue
+                registros.append((pd.to_datetime(o["date"]), val))
+            serie = pd.Series([r[1] for r in registros], index=[r[0] for r in registros]).sort_index()
+            return serie
         except Exception as e:
-            logger.warning(f"Alpha Vantage {from_sym}/{to_sym} falhou: {e}")
+            logger.warning(f"FRED {series_id} falhou: {e}")
+            return None
+
+
+class IMFConnector:
+    """Conector IMF DataMapper para reservas em dólar (COFER)."""
+
+    def fetch_dollar_reserves_pct(self) -> Optional[pd.Series]:
+        """Retorna a parcela de reservas globais alocadas em USD (COFER)."""
+        try:
+            url = "https://www.imf.org/external/datamapper/api/v1/COFER"
+            resp = requests.get(url, timeout=30)
+            resp.raise_for_status()
+            dados = resp.json()
+            # Estrutura aninhada; tenta extrair série "World / US Dollar"
+            values = dados.get("values", {})
+            if "COFER" in values:
+                values = values["COFER"]
+
+            registros = []
+            for chave, serie_dict in values.items():
+                if not isinstance(serie_dict, dict):
+                    continue
+                # Heurística: procura série do World ou US Dollar
+                label = chave.lower()
+                if "world" in label or "usd" in label or "dollar" in label or "total" in label:
+                    for ano_str, val in serie_dict.items():
+                        try:
+                            registros.append((pd.Timestamp(year=int(ano_str), month=12, day=31), float(val)))
+                        except (ValueError, TypeError):
+                            continue
+                    break
+
+            if not registros:
+                return None
+            return pd.Series([r[1] for r in registros], index=[r[0] for r in registros]).sort_index()
+        except Exception as e:
+            logger.warning(f"IMF COFER falhou: {e}")
+            return None
+
+
+class EIAConnector:
+    """Conector EIA (Energy Information Administration) - API pública."""
+
+    BASE_URL = "https://api.eia.gov/v2/"
+
+    def __init__(self, api_key: Optional[str] = None):
+        self.api_key = api_key
+
+    def fetch_series(self, route: str, series_id: Optional[str] = None) -> Optional[pd.Series]:
+        if not self.api_key:
+            return None
+        try:
+            url = f"{self.BASE_URL}{route}/data"
+            params = {"api_key": self.api_key, "frequency": "monthly", "data[0]": "value"}
+            if series_id:
+                params["facets[series][]"] = series_id
+            resp = requests.get(url, params=params, timeout=30)
+            resp.raise_for_status()
+            dados = resp.json()
+            registros = []
+            for item in dados.get("response", {}).get("data", []):
+                try:
+                    dt = pd.to_datetime(item["period"])
+                    val = float(item["value"])
+                    registros.append((dt, val))
+                except (ValueError, TypeError, KeyError):
+                    continue
+            if not registros:
+                return None
+            return pd.Series([r[1] for r in registros], index=[r[0] for r in registros]).sort_index()
+        except Exception as e:
+            logger.warning(f"EIA {route} falhou: {e}")
+            return None
+
+
+class WorldBankConnector:
+    """Conector World Bank Open Data API."""
+
+    BASE_URL = "https://api.worldbank.org/v2/country/{country}/indicator/{indicator}"
+
+    def fetch_indicator(
+        self, indicator: str, country: str = "WLD", per_page: int = 100
+    ) -> Optional[pd.Series]:
+        try:
+            url = self.BASE_URL.format(country=country, indicator=indicator)
+            params = {"format": "json", "per_page": per_page}
+            resp = requests.get(url, params=params, timeout=30)
+            resp.raise_for_status()
+            dados = resp.json()
+            if not isinstance(dados, list) or len(dados) < 2:
+                return None
+            registros = []
+            for item in dados[1]:
+                try:
+                    ano = int(item["date"])
+                    val = float(item["value"])
+                    registros.append((pd.Timestamp(year=ano, month=12, day=31), val))
+                except (ValueError, TypeError, KeyError):
+                    continue
+            if not registros:
+                return None
+            return pd.Series([r[1] for r in registros], index=[r[0] for r in registros]).sort_index()
+        except Exception as e:
+            logger.warning(f"World Bank {indicator} falhou: {e}")
             return None
 
 
 # ============================================================
-# ORQUESTRADOR - Dados Reais para os 4 Campos
+# ORQUESTRADOR DE COLETA POR VETOR
 # ============================================================
 class IngestorReal:
     """
-    Orquestrador de ingestão de dados REAIS para os 4 Campos Granulares.
-    Se API falhar, retorna None (não simula - o pipeline deve lidar com isso).
+    Coleta dados reais para cada vetor do catálogo.
+    Usa cache SQLite para evitar rate limits e manter o dashboard funcional.
     """
 
-    def __init__(self, alpha_vantage_key: Optional[str] = None):
+    def __init__(
+        self,
+        alpha_vantage_key: Optional[str] = None,
+        fred_api_key: Optional[str] = None,
+        eia_api_key: Optional[str] = None,
+        cache: Optional[DataCache] = None,
+    ):
         self.bcb = BCBConnector()
         self.yahoo = YahooFinanceConnector()
         self.coingecko = CoinGeckoConnector()
         self.meteo = OpenMeteoConnector()
-        self.alpha = AlphaVantageConnector(alpha_vantage_key)
+        self.nasa = NASAGISSConnector()
+        self.fred = FREDConnector(fred_api_key)
+        self.imf = IMFConnector()
+        self.eia = EIAConnector(eia_api_key)
+        self.world_bank = WorldBankConnector()
+        self.cache = cache or DataCache()
 
-    def coletar_campo_classico(self) -> Dict[str, pd.Series]:
-        """CAMPO I: Dados clássicos reais (câmbio, commodities, índices)."""
-        dados = {}
+    # ------------------------------------------------------------------
+    # Coletores específicos por vetor
+    # ------------------------------------------------------------------
+    def _get_cache(self, vetor_id: str, campo: CampoGranular, nome: str) -> Optional[SerieReal]:
+        cached = self.cache.get(vetor_id)
+        if cached is None:
+            return None
+        return SerieReal(
+            vetor_id=vetor_id,
+            campo=campo,
+            nome=nome,
+            fonte=cached.get("fonte"),
+            serie=cached.get("serie"),
+            atualizado_em=cached.get("ultima_atualizacao"),
+            cache=True,
+        )
 
-        # USD/BRL via BCB (prioridade - dados oficiais brasileiros)
-        usd_brl = self.bcb.fetch_usd_brl(dias=120)
-        if usd_brl is not None:
-            dados["usd_brl"] = usd_brl
-            logger.info(f"BCB USD/BRL: {len(usd_brl)} pontos")
+    def _put_cache(self, sr: SerieReal) -> None:
+        if sr.serie is not None:
+            self.cache.put(sr.vetor_id, sr.campo.name, sr.nome, sr.fonte, sr.serie)
 
-        # SELIC via BCB
-        selic = self.bcb.fetch_selic(dias=120)
-        if selic is not None:
-            dados["selic"] = selic
+    # ---------- CLIMA ----------
+    def _coletar_temperatura_media_global(self) -> SerieReal:
+        vid = "temperatura_media_global"
+        nome = "Anomalia de temperatura global (NASA GISS)"
+        campo = CampoGranular.CLIMA
+        serie = self.nasa.fetch_global_temperature()
+        return SerieReal(vid, campo, nome, "NASA GISS", serie)
 
-        # Commodities via Yahoo Finance
-        commodities = self.yahoo.fetch_commodities()
-        for nome, serie in commodities.items():
-            dados[nome] = serie
-            logger.info(f"Yahoo {nome}: {len(serie)} pontos")
+    def _coletar_frequencia_eventos_extremos(self) -> SerieReal:
+        # EM-DAT não possui API gratuita direta e confiável.
+        return SerieReal(
+            "frequencia_eventos_extremos",
+            CampoGranular.CLIMA,
+            "Eventos extremos/mes",
+            None,
+            None,
+            erro="Fonte EM-DAT sem API gratuita disponivel",
+        )
 
-        # Índices via Yahoo Finance
-        indices = self.yahoo.fetch_indices()
-        for nome, serie in indices.items():
-            dados[nome] = serie
-            logger.info(f"Yahoo {nome}: {len(serie)} pontos")
+    def _coletar_indice_transicao_energetica(self) -> SerieReal:
+        return SerieReal(
+            "indice_transicao_energetica",
+            CampoGranular.CLIMA,
+            "Velocidade transicao limpa",
+            None,
+            None,
+            erro="Fonte IRENA sem API gratuita disponivel",
+        )
 
-        # DXY via Alpha Vantage (se tiver key)
-        if self.alpha.api_key != "demo":
-            dxy = self.alpha.fetch_forex("USD", "BRL")
-            if dxy is not None:
-                dados["dxy_proxy"] = dxy
+    def _coletar_demanda_minerais_renovaveis(self) -> SerieReal:
+        return SerieReal(
+            "demanda_minerais_renovaveis",
+            CampoGranular.CLIMA,
+            "Demanda minerais renovaveis",
+            None,
+            None,
+            erro="Fonte USGS/IEA sem API gratuita disponivel",
+        )
 
-        return dados
+    def _coletar_preco_carbono_eu(self) -> SerieReal:
+        # EU ETS não tem ticker Yahoo direto acessível sem assinatura.
+        # Tenta ETFs de carbono como proxy; se falhar, retorna None.
+        for ticker, label in [("KRBN", "KraneShares Global Carbon ETF"), ("NETZ", "SPDR MSCI World Net Zero ETF")]:
+            serie = self.yahoo.fetch_ticker(ticker, period="6mo")
+            if serie is not None:
+                return SerieReal("preco_carbono_eu", CampoGranular.CLIMA, "Carbono EU ETS (proxy ETF)", label, serie)
+        return SerieReal(
+            "preco_carbono_eu",
+            CampoGranular.CLIMA,
+            "Carbono EU ETS",
+            None,
+            None,
+            erro="EU ETS e proxies gratuitos indisponiveis",
+        )
 
-    def coletar_campo_tecnologico(self) -> Dict[str, pd.Series]:
-        """CAMPO II: Dados tecnológicos reais (semicondutores, chips)."""
-        dados = {}
+    def _coletar_capacidade_renovavel_gw(self) -> SerieReal:
+        return SerieReal(
+            "capacidade_renovavel_gw",
+            CampoGranular.CLIMA,
+            "Renovaveis instaladas",
+            None,
+            None,
+            erro="Fonte IRENA sem API gratuita disponivel",
+        )
 
-        # NVIDIA como proxy para semicondutores/IA
-        nvda = self.yahoo.fetch_ticker("NVDA", period="6mo")
-        if nvda is not None:
-            dados["nvidia_proxy_chips"] = nvda
-            logger.info(f"Yahoo NVDA: {len(nvda)} pontos")
+    # ---------- INFRAESTRUTURA ----------
+    def _coletar_investimento_data_centers_usd(self) -> SerieReal:
+        return SerieReal(
+            "investimento_data_centers_usd",
+            CampoGranular.INFRAESTRUTURA,
+            "Investimento DC global",
+            None,
+            None,
+            erro="Fonte Synergy Research paga; sem API gratuita",
+        )
 
-        # AMD
-        amd = self.yahoo.fetch_ticker("AMD", period="6mo")
-        if amd is not None:
-            dados["amd_proxy_chips"] = amd
+    def _coletar_capacidade_data_centers_mw(self) -> SerieReal:
+        return SerieReal(
+            "capacidade_data_centers_mw",
+            CampoGranular.INFRAESTRUTURA,
+            "Capacidade DC",
+            None,
+            None,
+            erro="Fonte Uptime Institute paga; sem API gratuita",
+        )
 
-        # TSMC (ADR)
-        tsm = self.yahoo.fetch_ticker("TSM", period="6mo")
-        if tsm is not None:
-            dados["tsmc_proxy_chips"] = tsm
+    def _coletar_demanda_cobre_global(self) -> SerieReal:
+        serie = self.yahoo.fetch_ticker("HG=F", period="6mo")
+        return SerieReal(
+            "demanda_cobre_global",
+            CampoGranular.INFRAESTRUTURA,
+            "Demanda cobre (proxy preco futuro LME/COMEX)",
+            "Yahoo Finance (HG=F)" if serie is not None else None,
+            serie,
+            erro=None if serie is not None else "Yahoo Finance indisponivel",
+        )
 
-        # VanEck Semiconductor ETF (SMH) como índice de chips
-        smh = self.yahoo.fetch_ticker("SMH", period="6mo")
-        if smh is not None:
-            dados["smh_etf_chips"] = smh
-            logger.info(f"Yahoo SMH (semiconductor ETF): {len(smh)} pontos")
+    def _coletar_demanda_aluminio_dc(self) -> SerieReal:
+        serie = self.yahoo.fetch_ticker("ALI=F", period="6mo")
+        return SerieReal(
+            "demanda_aluminio_dc",
+            CampoGranular.INFRAESTRUTURA,
+            "Aluminio DC (proxy preco futuro)",
+            "Yahoo Finance (ALI=F)" if serie is not None else None,
+            serie,
+            erro=None if serie is not None else "Yahoo Finance indisponivel",
+        )
 
-        return dados
+    def _coletar_expansao_5g_torres(self) -> SerieReal:
+        return SerieReal(
+            "expansao_5g_torres",
+            CampoGranular.INFRAESTRUTURA,
+            "Novas torres 5G",
+            None,
+            None,
+            erro="Fonte GSMA Intelligence paga; sem API gratuita",
+        )
 
-    def coletar_campo_geopolitico(self) -> Dict[str, pd.Series]:
-        """CAMPO III: Dados geopolíticos e monetários reais."""
-        dados = {}
+    def _coletar_fibra_otica_novos_km(self) -> SerieReal:
+        return SerieReal(
+            "fibra_otica_novos_km",
+            CampoGranular.INFRAESTRUTURA,
+            "Fibra nova",
+            None,
+            None,
+            erro="Fonte FTTH Council paga; sem API gratuita",
+        )
 
-        # Bitcoin como proxy para desdolarização/ativos alternativos
-        cryptos = self.coingecko.fetch_multiple(["bitcoin", "ethereum"])
-        for nome, serie in cryptos.items():
-            dados[f"crypto_{nome}"] = serie
-            logger.info(f"CoinGecko {nome}: {len(serie)} pontos")
+    def _coletar_indice_infra_digital(self) -> SerieReal:
+        return SerieReal(
+            "indice_infra_digital",
+            CampoGranular.INFRAESTRUTURA,
+            "Infra digital",
+            None,
+            None,
+            erro="Fonte ITU paga; sem API gratuita",
+        )
 
-        # Ouro como reserva de valor
-        ouro = self.yahoo.fetch_ticker("GC=F", period="6mo")
-        if ouro is not None:
-            dados["ouro_futuros"] = ouro
+    # ---------- CHIPS ----------
+    def _coletar_producao_gallium_t(self) -> SerieReal:
+        return SerieReal(
+            "producao_gallium_t",
+            CampoGranular.CHIPS,
+            "Producao galio",
+            None,
+            None,
+            erro="Fonte USGS sem API estruturada gratuita para este indicador",
+        )
 
-        return dados
+    def _coletar_producao_germanium_t(self) -> SerieReal:
+        return SerieReal(
+            "producao_germanium_t",
+            CampoGranular.CHIPS,
+            "Producao germanio",
+            None,
+            None,
+            erro="Fonte USGS sem API estruturada gratuita para este indicador",
+        )
 
-    def coletar_campo_climatico(self) -> Dict[str, pd.Series]:
-        """CAMPO IV: Dados climáticos reais."""
-        dados = {}
+    def _coletar_preco_gallium_usd_kg(self) -> SerieReal:
+        return SerieReal(
+            "preco_gallium_usd_kg",
+            CampoGranular.CHIPS,
+            "Preco galio",
+            None,
+            None,
+            erro="Fonte Fastmarkets paga; sem API gratuita",
+        )
 
-        # São Paulo (lat=-23.55, lon=-46.63)
-        clima_sp = self.meteo.fetch_climate(-23.55, -46.63, days=120)
-        if clima_sp is not None and "temperature_2m_max" in clima_sp.columns:
-            dados["temperatura_max_sp"] = clima_sp["temperature_2m_max"]
-            logger.info(f"Open-Meteo SP: {len(clima_sp)} pontos")
+    def _coletar_preco_germanium_usd_kg(self) -> SerieReal:
+        return SerieReal(
+            "preco_germanium_usd_kg",
+            CampoGranular.CHIPS,
+            "Preco germanio",
+            None,
+            None,
+            erro="Fonte Metal Bulletin paga; sem API gratuita",
+        )
 
-        # Cuiabá (agricultura, centro-oeste)
-        clima_cba = self.meteo.fetch_climate(-15.60, -56.10, days=120)
-        if clima_cba is not None and "temperature_2m_max" in clima_cba.columns:
-            dados["temperatura_max_cuiaba"] = clima_cba["temperature_2m_max"]
+    def _coletar_producao_gpus_m(self) -> SerieReal:
+        return SerieReal(
+            "producao_gpus_m",
+            CampoGranular.CHIPS,
+            "Producao GPUs",
+            None,
+            None,
+            erro="Fonte Jon Peddie Research paga; sem API gratuita",
+        )
 
-        return dados
+    def _coletar_controle_exportacao_china(self) -> SerieReal:
+        return SerieReal(
+            "controle_exportacao_china",
+            CampoGranular.CHIPS,
+            "Controle exportacao",
+            None,
+            None,
+            erro="Fonte CSIS sem API estruturada gratuita",
+        )
 
-    def coletar_todos(self) -> Dict[str, Dict[str, pd.Series]]:
-        """Coleta dados reais de todos os 4 campos."""
-        logger.info("=" * 60)
-        logger.info("INICIANDO COLETA DE DADOS REAIS")
-        logger.info("=" * 60)
+    def _coletar_investimento_fabs_usd(self) -> SerieReal:
+        return SerieReal(
+            "investimento_fabs_usd",
+            CampoGranular.CHIPS,
+            "Investimento fabs",
+            None,
+            None,
+            erro="Fonte SEMI paga; sem API gratuita",
+        )
 
-        dados = {
-            "classicos": self.coletar_campo_classico(),
-            "tecnologicos": self.coletar_campo_tecnologico(),
-            "geopoliticos": self.coletar_campo_geopolitico(),
-            "climaticos": self.coletar_campo_climatico(),
+    def _coletar_lead_time_chips_dias(self) -> SerieReal:
+        return SerieReal(
+            "lead_time_chips_dias",
+            CampoGranular.CHIPS,
+            "Lead time chips",
+            None,
+            None,
+            erro="Fonte Susquehanna paga; sem API gratuita",
+        )
+
+    # ---------- TERRAS RARAS ----------
+    def _coletar_producao_global_ree_t(self) -> SerieReal:
+        return SerieReal(
+            "producao_global_ree_t",
+            CampoGranular.TERRAS_RARAS,
+            "Producao REE",
+            None,
+            None,
+            erro="Fonte USGS sem API estruturada gratuita",
+        )
+
+    def _coletar_producao_china_ree_pct(self) -> SerieReal:
+        return SerieReal(
+            "producao_china_ree_pct",
+            CampoGranular.TERRAS_RARAS,
+            "China REE %",
+            None,
+            None,
+            erro="Fonte USGS sem API estruturada gratuita",
+        )
+
+    def _coletar_preco_neodimio_usd_kg(self) -> SerieReal:
+        return SerieReal(
+            "preco_neodimio_usd_kg",
+            CampoGranular.TERRAS_RARAS,
+            "Neodimio",
+            None,
+            None,
+            erro="Fonte Argus Media paga; sem API gratuita",
+        )
+
+    def _coletar_preco_disprosio_usd_kg(self) -> SerieReal:
+        return SerieReal(
+            "preco_disprosio_usd_kg",
+            CampoGranular.TERRAS_RARAS,
+            "Disprosio",
+            None,
+            None,
+            erro="Fonte Argus Media paga; sem API gratuita",
+        )
+
+    def _coletar_reservas_brasil_ree_t(self) -> SerieReal:
+        return SerieReal(
+            "reservas_brasil_ree_t",
+            CampoGranular.TERRAS_RARAS,
+            "Reservas BR REE",
+            None,
+            None,
+            erro="Fonte CPRM sem API estruturada gratuita",
+        )
+
+    def _coletar_dolar_reservas_pct(self) -> SerieReal:
+        serie = self.imf.fetch_dollar_reserves_pct()
+        return SerieReal(
+            "dolar_reservas_pct",
+            CampoGranular.TERRAS_RARAS,
+            "USD reservas globais (% COFER)",
+            "IMF COFER" if serie is not None else None,
+            serie,
+            erro=None if serie is not None else "IMF COFER indisponivel",
+        )
+
+    def _coletar_comercio_nao_dolar_pct(self) -> SerieReal:
+        return SerieReal(
+            "comercio_nao_dolar_pct",
+            CampoGranular.TERRAS_RARAS,
+            "Comercio nao-USD",
+            None,
+            None,
+            erro="Fonte BIS sem API estruturada gratuita",
+        )
+
+    def _coletar_contratos_yuan_petroleo(self) -> SerieReal:
+        return SerieReal(
+            "contratos_yuan_petroleo",
+            CampoGranular.TERRAS_RARAS,
+            "Petroleo em yuan",
+            None,
+            None,
+            erro="Fonte INE (Shanghai) sem API gratuita direta",
+        )
+
+    def _coletar_comercio_intra_brics_usd(self) -> SerieReal:
+        return SerieReal(
+            "comercio_intra_brics_usd",
+            CampoGranular.TERRAS_RARAS,
+            "Comercio BRICS",
+            None,
+            None,
+            erro="Fonte IMF sem série estruturada gratuita para comercio intra-BRICS",
+        )
+
+    def _coletar_usd_brl(self) -> SerieReal:
+        serie = self.bcb.fetch_usd_brl(dias=120)
+        return SerieReal(
+            "usd_brl",
+            CampoGranular.TERRAS_RARAS,
+            "Cambio USD/BRL",
+            "BCB" if serie is not None else None,
+            serie,
+            erro=None if serie is not None else "BCB indisponivel",
+        )
+
+    def _coletar_dxy_index(self) -> SerieReal:
+        serie = self.yahoo.fetch_ticker("DX-Y.NYB", period="6mo")
+        return SerieReal(
+            "dxy_index",
+            CampoGranular.TERRAS_RARAS,
+            "Dollar Index (DXY)",
+            "Yahoo Finance (DX-Y.NYB)" if serie is not None else None,
+            serie,
+            erro=None if serie is not None else "Yahoo Finance indisponivel",
+        )
+
+    def _coletar_ouro_usd_oz(self) -> SerieReal:
+        serie = self.yahoo.fetch_ticker("GC=F", period="6mo")
+        return SerieReal(
+            "ouro_usd_oz",
+            CampoGranular.TERRAS_RARAS,
+            "Ouro",
+            "Yahoo Finance (GC=F)" if serie is not None else None,
+            serie,
+            erro=None if serie is not None else "Yahoo Finance indisponivel",
+        )
+
+    def _coletar_brent_usd(self) -> SerieReal:
+        serie = self.yahoo.fetch_ticker("BZ=F", period="6mo")
+        return SerieReal(
+            "brent_usd",
+            CampoGranular.TERRAS_RARAS,
+            "Brent",
+            "Yahoo Finance (BZ=F)" if serie is not None else None,
+            serie,
+            erro=None if serie is not None else "Yahoo Finance indisponivel",
+        )
+
+    def _coletar_btc_usd(self) -> SerieReal:
+        serie = self.coingecko.fetch_price_history("bitcoin", dias=120)
+        return SerieReal(
+            "btc_usd",
+            CampoGranular.TERRAS_RARAS,
+            "Bitcoin",
+            "CoinGecko" if serie is not None else None,
+            serie,
+            erro=None if serie is not None else "CoinGecko indisponivel",
+        )
+
+    def _coletar_reservas_ouro_china_t(self) -> SerieReal:
+        return SerieReal(
+            "reservas_ouro_china_t",
+            CampoGranular.TERRAS_RARAS,
+            "Ouro China",
+            None,
+            None,
+            erro="Fonte PBoC sem API estruturada gratuita",
+        )
+
+    def _coletar_producao_petroleo_opec(self) -> SerieReal:
+        # EIA possui dados de producao se API key for fornecida
+        serie = None
+        if self.eia.api_key:
+            serie = self.eia.fetch_series("petroleum/crdlbpns", None)
+        return SerieReal(
+            "producao_petroleo_opec",
+            CampoGranular.TERRAS_RARAS,
+            "Producao OPEC",
+            "EIA" if serie is not None else None,
+            serie,
+            erro=None if serie is not None else "EIA indisponivel (requer API key)",
+        )
+
+    def _coletar_preco_cobre_usd_t(self) -> SerieReal:
+        serie = self.yahoo.fetch_ticker("HG=F", period="6mo")
+        return SerieReal(
+            "preco_cobre_usd_t",
+            CampoGranular.TERRAS_RARAS,
+            "Cobre",
+            "Yahoo Finance (HG=F)" if serie is not None else None,
+            serie,
+            erro=None if serie is not None else "Yahoo Finance indisponivel",
+        )
+
+    def _coletar_preco_litio_usd_kg(self) -> SerieReal:
+        # ETF de litio como proxy
+        serie = self.yahoo.fetch_ticker("LIT", period="6mo")
+        return SerieReal(
+            "preco_litio_usd_kg",
+            CampoGranular.TERRAS_RARAS,
+            "Litio (proxy ETF Global X Lithium)",
+            "Yahoo Finance (LIT)" if serie is not None else None,
+            serie,
+            erro=None if serie is not None else "Yahoo Finance indisponivel",
+        )
+
+    # ---------- CARBONO ----------
+    def _coletar_preco_carbono_eu_novo(self) -> SerieReal:
+        # Replica a coleta do clima, mas agora no campo CARBONO.
+        for ticker, label in [("KRBN", "KraneShares Global Carbon ETF"), ("NETZ", "SPDR MSCI World Net Zero ETF")]:
+            serie = self.yahoo.fetch_ticker(ticker, period="6mo")
+            if serie is not None:
+                return SerieReal("preco_carbono_eu", CampoGranular.CARBONO, "Carbono EU ETS (proxy ETF)", label, serie)
+        return SerieReal(
+            "preco_carbono_eu",
+            CampoGranular.CARBONO,
+            "Carbono EU ETS",
+            None,
+            None,
+            erro="EU ETS e proxies gratuitos indisponiveis",
+        )
+
+    def _coletar_preco_carbono_eua(self) -> SerieReal:
+        for ticker, label in [("GRN", "iPath Carbon ETN"), ("KRBN", "KraneShares Global Carbon ETF")]:
+            serie = self.yahoo.fetch_ticker(ticker, period="6mo")
+            if serie is not None:
+                return SerieReal("preco_carbono_eua", CampoGranular.CARBONO, "Carbono EUA (proxy ETF)", label, serie)
+        return SerieReal(
+            "preco_carbono_eua",
+            CampoGranular.CARBONO,
+            "Carbono EUA (RGGI/WCI)",
+            None,
+            None,
+            erro="Mercado de carbono EUA e proxies gratuitos indisponiveis",
+        )
+
+    def _coletar_preco_carbono_china(self) -> SerieReal:
+        for ticker, label in [("KGRN", "KraneShares MSCI China Clean Technology ETF"), ("PBW", "WilderHill Clean Energy ETF")]:
+            serie = self.yahoo.fetch_ticker(ticker, period="6mo")
+            if serie is not None:
+                return SerieReal("preco_carbono_china", CampoGranular.CARBONO, "Carbono China ETS (proxy ETF)", label, serie)
+        return SerieReal(
+            "preco_carbono_china",
+            CampoGranular.CARBONO,
+            "Carbono China ETS",
+            None,
+            None,
+            erro="China ETS e proxies gratuitos indisponiveis",
+        )
+
+    def _coletar_creditos_voluntarios_usd(self) -> SerieReal:
+        for ticker, label in [("NETZ", "SPDR MSCI World Net Zero ETF"), ("CBON", "iShares MSCI ACWI Low Carbon Target ETF")]:
+            serie = self.yahoo.fetch_ticker(ticker, period="6mo")
+            if serie is not None:
+                return SerieReal("creditos_voluntarios_usd", CampoGranular.CARBONO, "Creditos carbono voluntario (proxy ETF)", label, serie)
+        return SerieReal(
+            "creditos_voluntarios_usd",
+            CampoGranular.CARBONO,
+            "Creditos carbono voluntario",
+            None,
+            None,
+            erro="Mercado voluntario de carbono e proxies gratuitos indisponiveis",
+        )
+
+    def _coletar_intensidade_carbono_setorial(self) -> SerieReal:
+        serie = self.world_bank.fetch_indicator("EN.GHG.CO2.RT.GDP.KD", country="WLD")
+        return SerieReal(
+            "intensidade_carbono_setorial",
+            CampoGranular.CARBONO,
+            "Intensidade de carbono do PIB mundial",
+            "World Bank" if serie is not None else None,
+            serie,
+            erro=None if serie is not None else "World Bank indisponivel",
+        )
+
+    # ---------- GEOPOLITICA ----------
+    def _coletar_geopolitical_risk_idx(self) -> SerieReal:
+        # GPRD (Geopolitical Risk) é pago. FRED GEPUINDM exige API key gratuita.
+        serie = self.fred.fetch_series("GEPUINDM")
+        return SerieReal(
+            "geopolitical_risk_idx",
+            CampoGranular.GEOPOLITICA,
+            "Risco geopolitico global",
+            "FRED GEPUINDM" if serie is not None else None,
+            serie,
+            erro=None if serie is not None else "FRED indisponivel (requer API key gratuita em fred.stlouisfed.org)",
+        )
+
+    def _coletar_geopolitical_risk_vix(self) -> SerieReal:
+        serie = self.yahoo.fetch_ticker("^VIX", period="6mo")
+        return SerieReal(
+            "geopolitical_risk_vix",
+            CampoGranular.GEOPOLITICA,
+            "Proxy de risco geopolitico (VIX)",
+            "Yahoo Finance (^VIX)" if serie is not None else None,
+            serie,
+            erro=None if serie is not None else "Yahoo Finance indisponivel",
+        )
+
+    def _coletar_fragile_states_index(self) -> SerieReal:
+        # Fund for Peace publica dados, mas não oferece API estruturada gratuita.
+        return SerieReal(
+            "fragile_states_index",
+            CampoGranular.GEOPOLITICA,
+            "Indice de Estados Frageis",
+            None,
+            None,
+            erro="Fund for Peace nao oferece API gratuita aberta",
+        )
+
+    def _coletar_conflitos_ativos(self) -> SerieReal:
+        # ACLED oferece API gratuita mediante cadastro em acleddata.com.
+        # Sem token/email valido, retorna None.
+        return SerieReal(
+            "conflitos_ativos",
+            CampoGranular.GEOPOLITICA,
+            "Conflitos ativos",
+            None,
+            None,
+            erro="ACLED requer cadastro gratuito em acleddata.com para obter API key",
+        )
+
+    def _coletar_indice_risco_pais(self) -> SerieReal:
+        return SerieReal(
+            "indice_risco_pais",
+            CampoGranular.GEOPOLITICA,
+            "Indice de risco pais",
+            None,
+            None,
+            erro="PRS Group e fonte paga; sem API gratuita",
+        )
+
+    # ------------------------------------------------------------------
+    # Mapeamento vetor -> coletor
+    # ------------------------------------------------------------------
+    COLETORES: Dict[str, Any] = {
+        # Clima
+        "temperatura_media_global": "_coletar_temperatura_media_global",
+        "frequencia_eventos_extremos": "_coletar_frequencia_eventos_extremos",
+        "indice_transicao_energetica": "_coletar_indice_transicao_energetica",
+        "demanda_minerais_renovaveis": "_coletar_demanda_minerais_renovaveis",
+        "capacidade_renovavel_gw": "_coletar_capacidade_renovavel_gw",
+        # Infraestrutura
+        "investimento_data_centers_usd": "_coletar_investimento_data_centers_usd",
+        "capacidade_data_centers_mw": "_coletar_capacidade_data_centers_mw",
+        "demanda_cobre_global": "_coletar_demanda_cobre_global",
+        "demanda_aluminio_dc": "_coletar_demanda_aluminio_dc",
+        "expansao_5g_torres": "_coletar_expansao_5g_torres",
+        "fibra_otica_novos_km": "_coletar_fibra_otica_novos_km",
+        "indice_infra_digital": "_coletar_indice_infra_digital",
+        # Chips
+        "producao_gallium_t": "_coletar_producao_gallium_t",
+        "producao_germanium_t": "_coletar_producao_germanium_t",
+        "preco_gallium_usd_kg": "_coletar_preco_gallium_usd_kg",
+        "preco_germanium_usd_kg": "_coletar_preco_germanium_usd_kg",
+        "producao_gpus_m": "_coletar_producao_gpus_m",
+        "controle_exportacao_china": "_coletar_controle_exportacao_china",
+        "investimento_fabs_usd": "_coletar_investimento_fabs_usd",
+        "lead_time_chips_dias": "_coletar_lead_time_chips_dias",
+        # Terras raras
+        "producao_global_ree_t": "_coletar_producao_global_ree_t",
+        "producao_china_ree_pct": "_coletar_producao_china_ree_pct",
+        "preco_neodimio_usd_kg": "_coletar_preco_neodimio_usd_kg",
+        "preco_disprosio_usd_kg": "_coletar_preco_disprosio_usd_kg",
+        "reservas_brasil_ree_t": "_coletar_reservas_brasil_ree_t",
+        "dolar_reservas_pct": "_coletar_dolar_reservas_pct",
+        "comercio_nao_dolar_pct": "_coletar_comercio_nao_dolar_pct",
+        "contratos_yuan_petroleo": "_coletar_contratos_yuan_petroleo",
+        "comercio_intra_brics_usd": "_coletar_comercio_intra_brics_usd",
+        "usd_brl": "_coletar_usd_brl",
+        "dxy_index": "_coletar_dxy_index",
+        "ouro_usd_oz": "_coletar_ouro_usd_oz",
+        "brent_usd": "_coletar_brent_usd",
+        "btc_usd": "_coletar_btc_usd",
+        "reservas_ouro_china_t": "_coletar_reservas_ouro_china_t",
+        "producao_petroleo_opec": "_coletar_producao_petroleo_opec",
+        "preco_cobre_usd_t": "_coletar_preco_cobre_usd_t",
+        "preco_litio_usd_kg": "_coletar_preco_litio_usd_kg",
+        # Carbono
+        "preco_carbono_eu": "_coletar_preco_carbono_eu_novo",
+        "preco_carbono_eua": "_coletar_preco_carbono_eua",
+        "preco_carbono_china": "_coletar_preco_carbono_china",
+        "creditos_voluntarios_usd": "_coletar_creditos_voluntarios_usd",
+        "intensidade_carbono_setorial": "_coletar_intensidade_carbono_setorial",
+        # Geopolitica
+        "geopolitical_risk_idx": "_coletar_geopolitical_risk_idx",
+        "geopolitical_risk_vix": "_coletar_geopolitical_risk_vix",
+        "fragile_states_index": "_coletar_fragile_states_index",
+        "conflitos_ativos": "_coletar_conflitos_ativos",
+        "indice_risco_pais": "_coletar_indice_risco_pais",
+    }
+
+    # ------------------------------------------------------------------
+    # Coleta completa
+    # ------------------------------------------------------------------
+    def coletar_todos(
+        self, usar_cache: bool = True, max_age_hours: int = 24
+    ) -> Dict[CampoGranular, List[SerieReal]]:
+        """
+        Coleta dados reais para todos os vetores do catálogo.
+        Usa cache quando disponível e respeita max_age_hours.
+        """
+        resultados: Dict[CampoGranular, List[SerieReal]] = {
+            CampoGranular.CLIMA: [],
+            CampoGranular.INFRAESTRUTURA: [],
+            CampoGranular.CHIPS: [],
+            CampoGranular.TERRAS_RARAS: [],
+            CampoGranular.CARBONO: [],
+            CampoGranular.GEOPOLITICA: [],
         }
 
-        total = sum(len(v) for v in dados.values())
-        logger.info(f"=" * 60)
-        logger.info(f"COLETA CONCLUÍDA: {total} séries reais coletadas")
-        logger.info(f"=" * 60)
+        for campo_enum, campo_cfg in REGISTRO_CAMPOS.items():
+            for vetor_id in campo_cfg.vetores:
+                cfg = campo_cfg.vetores[vetor_id]
+                nome = cfg.descricao or vetor_id
 
-        return dados
+                # 1. Tenta cache
+                if usar_cache:
+                    cached = self._get_cache(vetor_id, campo_enum, nome)
+                    if cached is not None:
+                        resultados[campo_enum].append(cached)
+                        self.cache.log(vetor_id, cached.fonte, "CACHE_HIT", f"stale={cached.cache}")
+                        continue
 
-    def status(self) -> Dict[str, Any]:
-        """Status das conexões de APIs."""
+                # 2. Tenta coletar em tempo real
+                metodo_nome = self.COLETORES.get(vetor_id)
+                if metodo_nome is None:
+                    sr = SerieReal(
+                        vetor_id,
+                        campo_enum,
+                        nome,
+                        None,
+                        None,
+                        erro="Coletor nao implementado",
+                    )
+                else:
+                    try:
+                        sr = getattr(self, metodo_nome)()
+                    except Exception as e:
+                        sr = SerieReal(vetor_id, campo_enum, nome, None, None, erro=str(e))
+
+                if sr.serie is not None:
+                    self._put_cache(sr)
+                    self.cache.log(vetor_id, sr.fonte, "OK")
+                else:
+                    self.cache.log(vetor_id, sr.fonte or "", "PENDENTE", sr.erro or "")
+
+                resultados[campo_enum].append(sr)
+
+        return resultados
+
+    def resumo(self, resultados: Dict[CampoGranular, List[SerieReal]]) -> Dict[str, Any]:
+        total = sum(len(v) for v in resultados.values())
+        disponiveis = sum(1 for lista in resultados.values() for s in lista if s.disponivel)
+        pendentes = [
+            s.vetor_id
+            for lista in resultados.values()
+            for s in lista
+            if not s.disponivel
+        ]
+        return {
+            "total_vetores": total,
+            "com_dados_reais": disponiveis,
+            "pendentes": len(pendentes),
+            "lista_pendentes": pendentes,
+        }
+
+    def status_apis(self) -> Dict[str, str]:
         return {
             "bcb": "ativo",
             "yahoo_finance": "ativo" if self.yahoo.available else "yfinance_nao_instalado",
             "coingecko": "ativo",
             "open_meteo": "ativo",
-            "alpha_vantage": "ativo" if self.alpha.api_key != "demo" else "demo_mode",
+            "nasa_giss": "ativo",
+            "fred": "ativo" if self.fred.api_key else "api_key_nao_configurada",
+            "imf": "ativo",
+            "eia": "ativo" if self.eia.api_key else "api_key_nao_configurada",
+            "world_bank": "ativo",
         }

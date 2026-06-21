@@ -3,13 +3,144 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Data Bank — A Primeira Fintech Pós-Quântica de Dados do Brasil</title>
-  <meta name="description" content="Transformamos dados em ativos financeiros com segurança pós-quântica nativa. Custódia, valuation, tokenização e crédito informacional.">
+  <title>DataBank — Inteligência de Mercado para PMEs</title>
+  <meta name="description" content="Dashboard open source de commodities, macroeconomia e transição energética. Self-hosted, sem coleta de dados do usuário.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%230a0a0f'/><text x='50' y='62' text-anchor='middle' font-size='48' font-family='sans-serif' font-weight='800' fill='%2300d4aa'>D</text></svg>">
-  <meta property="og:title" content="Data Bank — Fintech Pós-Quântica de Dados">
-  <meta property="og:description" content="Segurança pós-quântica nativa para ativos de dados empresariais.">
+  <meta property="og:title" content="DataBank — Inteligência de Mercado para PMEs">
+  <meta property="og:description" content="Dashboard open source de commodities, macroeconomia e transição energética.">
   <meta property="og:type" content="website">
   <link rel="stylesheet" href="style.css">
+  <style>
+    .disclaimer {
+      background: rgba(0, 212, 170, 0.08);
+      border: 1px solid rgba(0, 212, 170, 0.25);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-top: 28px;
+      text-align: left;
+    }
+    .disclaimer p {
+      margin: 0;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: var(--text-secondary);
+    }
+    .disclaimer strong {
+      color: var(--accent);
+    }
+    .vetores-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 32px;
+    }
+    .vetor-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+    .vetor-card.real {
+      border-left: 3px solid var(--accent);
+    }
+    .vetor-card.pending {
+      border-left: 3px solid var(--text-muted);
+      opacity: 0.7;
+    }
+    .vetor-card h4 {
+      margin: 0 0 6px;
+      font-size: 0.95rem;
+      color: var(--text-primary);
+    }
+    .vetor-card p {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+    .status-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 3px 8px;
+      border-radius: 20px;
+      margin-top: 10px;
+    }
+    .status-badge.real {
+      background: rgba(0, 212, 170, 0.15);
+      color: var(--accent);
+    }
+    .status-badge.pending {
+      background: rgba(148, 163, 184, 0.12);
+      color: var(--text-muted);
+    }
+    .fields-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+      margin-top: 28px;
+    }
+    .field-pill {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+    }
+    .field-pill .count {
+      display: block;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .field-pill .count.pending {
+      color: var(--text-muted);
+    }
+    .field-pill .label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+    .business-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-top: 32px;
+    }
+    .business-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 24px;
+      text-align: center;
+    }
+    .business-card .icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+    }
+    .business-card h3 {
+      margin: 0 0 10px;
+      font-size: 1.05rem;
+      color: var(--text-primary);
+    }
+    .business-card p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    .security-section {
+      background: linear-gradient(180deg, rgba(0, 212, 170, 0.05) 0%, transparent 100%);
+    }
+    .footer-license {
+      display: block;
+      margin-top: 8px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+  </style>
 </head>
 <body>
 
@@ -18,12 +149,13 @@
     <div class="container">
       <a href="index.html" class="nav-logo">
         <span class="logo-icon">D</span>
-        Data Bank
+        DataBank
       </a>
       <div class="nav-links">
         <a href="index.html" class="active">Home</a>
-        <a href="pqc.html">PQC</a>
         <a href="algorithm.html">Algoritmo</a>
+        <a href="https://databank-fintech-demo.streamlit.app" target="_blank" rel="noopener">Dashboard</a>
+        <a href="https://github.com/guilherme-machado-ceo/DataBank-Fintech" target="_blank" rel="noopener">GitHub</a>
         <a href="contact.html" class="nav-cta">Contato</a>
       </div>
       <button class="nav-toggle" aria-label="Menu">
@@ -39,131 +171,241 @@
       <div class="hero-content">
         <div class="hero-label">
           <span class="pulse"></span>
-          Post-Quantum Security · Active
+          Open Source · Self-Hosted
         </div>
         <h1>
-          A Infraestrutura Financeira<br>
-          <span class="text-gradient">Pós-Quântica</span> de Dados
+          DataBank<br>
+          <span class="text-gradient">Inteligência de Mercado</span> para PMEs
         </h1>
         <p>
-          Transformamos dados empresariais em ativos financeiros estruturados
-          com segurança pós-quântica nativa. Custódia, valuation, monetização
-          e crédito informacional — protegidos contra ameaças presentes e futuras.
+          Dashboard open source de commodities, macroeconomia e transição energética.
+          Acompanhe em tempo real indicadores que impactam custos, supply chain e decisões estratégicas.
         </p>
         <div class="hero-buttons">
-          <a href="algorithm.html" class="btn btn-primary">Conhecer o Algoritmo</a>
-          <a href="pqc.html" class="btn btn-outline">Solução PQC</a>
+          <a href="https://databank-fintech-demo.streamlit.app" target="_blank" rel="noopener" class="btn btn-primary">Abrir Dashboard</a>
+          <a href="https://github.com/guilherme-machado-ceo/DataBank-Fintech" target="_blank" rel="noopener" class="btn btn-outline">Ver no GitHub</a>
         </div>
+
+        <div class="disclaimer">
+          <p>
+            <strong>Transparência legal:</strong> o DataBank <strong>não é fintech</strong>,
+            <strong>não precisa de autorização do Banco Central</strong> e
+            <strong>não coleta dados do usuário</strong>. É uma ferramenta de análise de dados públicos,
+            executada no seu próprio ambiente (self-hosted).
+          </p>
+        </div>
+
         <div class="hero-stats">
           <div class="hero-stat">
-            <span class="value mono" data-count="41">0</span>
-            <span class="label">Vetores monitorados</span>
+            <span class="value mono" data-count="49">0</span>
+            <span class="label">Vetores catalogados</span>
           </div>
           <div class="hero-stat">
-            <span class="value mono" data-count="4">0</span>
-            <span class="label">Campos granulares</span>
+            <span class="value mono" data-count="17">0</span>
+            <span class="label">Com dados reais</span>
           </div>
           <div class="hero-stat">
-            <span class="value mono" data-count="3">0</span>
-            <span class="label">Algoritmos PQC</span>
+            <span class="value mono" data-count="6">0</span>
+            <span class="label">Campos de análise</span>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ═══ PROBLEMA: HNDL ═══ -->
-  <section class="section-sm">
+  <hr class="divider">
+
+  <!-- ═══ O QUE FUNCIONA HOJE ═══ -->
+  <section class="section">
     <div class="container">
       <div class="section-header reveal">
-        <span class="badge badge-error">Ameaça Atual</span>
-        <h2 style="margin-top:16px">Harvest Now, Decrypt Later</h2>
+        <span class="badge badge-accent">Dados Reais</span>
+        <h2 style="margin-top:16px">O que funciona hoje</h2>
         <p>
-          Adversários estão coletando dados criptografados hoje para
-          descriptografá-los quando computadores quânticos estiverem disponíveis.
-          A janela de vulnerabilidade já está aberta.
+          17 vetores com fontes de dados reais e gratuitas, alimentados por APIs públicas
+          e atualizados automaticamente no dashboard.
         </p>
       </div>
 
-      <div class="flow reveal stagger">
-        <div class="flow-step">
-          <div class="step-icon">&#x1F4E5;</div>
-          <span class="step-label">Coleta</span>
-          <span class="step-sub">Adversário captura<br>dados criptografados</span>
+      <div class="vetores-grid stagger">
+        <div class="vetor-card real">
+          <h4>Temperatura global</h4>
+          <p>NASA GISS — anomalia de temperatura média global</p>
+          <span class="status-badge real">Dado real</span>
         </div>
-        <span class="flow-arrow">&#x2192;</span>
-        <div class="flow-step">
-          <div class="step-icon">&#x1F4E6;</div>
-          <span class="step-label">Armazena</span>
-          <span class="step-sub">Preserva por anos<br>aguardando Q-Day</span>
+        <div class="vetor-card real">
+          <h4>Carbono EU ETS</h4>
+          <p>KraneShares Global Carbon ETF (proxy)</p>
+          <span class="status-badge real">Dado real</span>
         </div>
-        <span class="flow-arrow">&#x2192;</span>
-        <div class="flow-step">
-          <div class="step-icon">&#x26A0;</div>
-          <span class="step-label">Q-Day</span>
-          <span class="step-sub">Computador quântico<br>quebra RSA/ECC</span>
+        <div class="vetor-card real">
+          <h4>Carbono EUA</h4>
+          <p>iPath Carbon ETN (proxy RGGI/WCI)</p>
+          <span class="status-badge real">Dado real</span>
         </div>
-        <span class="flow-arrow">&#x2192;</span>
-        <div class="flow-step">
-          <div class="step-icon" style="border-color: var(--error);">&#x1F4F0;</div>
-          <span class="step-label" style="color: var(--error);">Exposto</span>
-          <span class="step-sub">Dados que deveriam<br>ser secretos vazam</span>
+        <div class="vetor-card real">
+          <h4>Carbono China</h4>
+          <p>KraneShares MSCI China Clean Technology ETF (proxy)</p>
+          <span class="status-badge real">Dado real</span>
+        </div>
+        <div class="vetor-card real">
+          <h4>Créditos de carbono voluntário</h4>
+          <p>SPDR MSCI World Net Zero ETF (proxy)</p>
+          <span class="status-badge real">Dado real</span>
+        </div>
+        <div class="vetor-card real">
+          <h4>Intensidade de carbono do PIB</h4>
+          <p>World Bank — kg CO2e por USD de PIB</p>
+          <span class="status-badge real">Dado real</span>
+        </div>
+        <div class="vetor-card real">
+          <h4>Demanda de cobre</h4>
+          <p>Yahoo Finance — futuro de cobre (HG=F)</p>
+          <span class="status-badge real">Dado real</span>
+        </div>
+        <div class="vetor-card real">
+          <h4>Alumínio para data centers</h4>
+          <p>Yahoo Finance — futuro de alumínio (ALI=F)</p>
+          <span class="status-badge real">Dado real</span>
+        </div>
+        <div class="vetor-card real">
+          <h4>USD/BRL</h4>
+          <p>Banco Central do Brasil</p>
+          <span class="status-badge real">Dado real</span>
+        </div>
+        <div class="vetor-card real">
+          <h4>DXY (Dollar Index)</h4>
+          <p>Yahoo Finance</p>
+          <span class="status-badge real">Dado real</span>
+        </div>
+        <div class="vetor-card real">
+          <h4>Ouro</h4>
+          <p>Yahoo Finance — futuro de ouro (GC=F)</p>
+          <span class="status-badge real">Dado real</span>
+        </div>
+        <div class="vetor-card real">
+          <h4>Brent</h4>
+          <p>Yahoo Finance — futuro de brent (BZ=F)</p>
+          <span class="status-badge real">Dado real</span>
+        </div>
+        <div class="vetor-card real">
+          <h4>Bitcoin</h4>
+          <p>CoinGecko</p>
+          <span class="status-badge real">Dado real</span>
+        </div>
+        <div class="vetor-card real">
+          <h4>Preço do cobre</h4>
+          <p>Yahoo Finance — futuro de cobre (HG=F)</p>
+          <span class="status-badge real">Dado real</span>
+        </div>
+        <div class="vetor-card real">
+          <h4>Preço do lítio</h4>
+          <p>Yahoo Finance — ETF Global X Lithium (LIT)</p>
+          <span class="status-badge real">Dado real</span>
+        </div>
+        <div class="vetor-card real">
+          <h4>Proxy de risco geopolítico</h4>
+          <p>Yahoo Finance — VIX (^VIX)</p>
+          <span class="status-badge real">Dado real</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ═══ 6 CAMPOS, 49 VETORES ═══ -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="badge badge-gold">Cobertura</span>
+        <h2 style="margin-top:16px">6 campos, 49 vetores catalogados</h2>
+        <p>
+          A taxonomia cobre commodities, macroeconomia, clima, infraestrutura e geopolítica.
+          A honestidade é regra: vetores sem API gratuita ficam pendentes, nunca simulados.
+        </p>
+      </div>
+
+      <div class="fields-summary stagger">
+        <div class="field-pill">
+          <span class="count">2/6</span>
+          <span class="label">Clima</span>
+        </div>
+        <div class="field-pill">
+          <span class="count">2/7</span>
+          <span class="label">Infraestrutura</span>
+        </div>
+        <div class="field-pill">
+          <span class="count pending">0/8</span>
+          <span class="label">Chips</span>
+        </div>
+        <div class="field-pill">
+          <span class="count">7/18</span>
+          <span class="label">Terras Raras</span>
+        </div>
+        <div class="field-pill">
+          <span class="count">5/5</span>
+          <span class="label">Carbono</span>
+        </div>
+        <div class="field-pill">
+          <span class="count">1/5</span>
+          <span class="label">Geopolítica</span>
         </div>
       </div>
 
       <div class="alert alert-warning container-narrow reveal" style="margin-top:48px">
-        <strong>Mais de 50% de chance de quebrar RSA-2048 até 2035.</strong>
-        Seus dados custodiados hoje podem ser comprometidos amanhã.
-        A proteção pós-quântica não é opcional — é urgente.
+        <strong>32 vetores ainda estão pendentes.</strong>
+        A maioria depende de fontes pagas (Argus, SEMI, Synergy, GSMA) ou de APIs que exigem cadastro
+        gratuito (FRED, ACLED, EIA). O projeto aceita contribuições para novas fontes abertas.
       </div>
     </div>
   </section>
 
   <hr class="divider">
 
-  <!-- ═══ 4 PILARES ═══ -->
+  <!-- ═══ MODELO DE NEGÓCIO ═══ -->
   <section class="section">
     <div class="container">
       <div class="section-header reveal">
-        <span class="badge badge-accent">Plataforma</span>
-        <h2 style="margin-top:16px">Quatro Pilares</h2>
+        <span class="badge badge-accent">Modelo</span>
+        <h2 style="margin-top:16px">Como o projeto se sustenta</h2>
         <p>
-          Uma infraestrutura completa para tratar dados como ativos financeiros
-          de valor real, com segurança pós-quântica em cada camada.
+          O código é open source e gratuito. A receita vem de serviços opcionais
+          para empresas que querem personalização, integração ou análise sob demanda.
         </p>
       </div>
 
-      <div class="grid-4 stagger">
-        <div class="card card-glow">
-          <div class="card-icon">&#x1F512;</div>
-          <h3>Custódia PQC</h3>
+      <div class="business-grid stagger">
+        <div class="business-card">
+          <div class="icon">&#x1F4E6;</div>
+          <h3>Open Source</h3>
           <p>
-            Armazenamento e proteção de datasets com criptografia pós-quântica
-            nativa. Imune a ataques Harvest Now, Decrypt Later.
+            Código aberto sob licença Apache 2.0. Qualquer PME ou desenvolvedor pode usar,
+            modificar e hospedar gratuitamente.
           </p>
         </div>
-        <div class="card card-glow">
-          <div class="card-icon">&#x1F4CA;</div>
-          <h3>Valuation</h3>
+        <div class="business-card">
+          <div class="icon">&#x1F9D1;&#x200D;&#x1F4BB;</div>
+          <h3>Consultoria</h3>
           <p>
-            Score proprietário baseado em 6 dimensões de análise.
-            Quantificação automática do valor econômico de cada dataset.
+            Implementação customizada, treinamento de equipes e modelagem de indicadores
+            específicos para o seu setor.
           </p>
         </div>
-        <div class="card card-glow">
-          <div class="card-icon gold">&#x1F4B0;</div>
-          <h3>Monetização</h3>
+        <div class="business-card">
+          <div class="icon">&#x1F517;</div>
+          <h3>API & Integração</h3>
           <p>
-            Tokenização de ativos de dados com smart contracts
-            assinados pós-quânticamente. Marketplace seguro.
+            Conectores sob demanda para ERPs, planilhas, BI e sistemas internos.
+            Você escolhe onde os dados ficam.
           </p>
         </div>
-        <div class="card card-glow">
-          <div class="card-icon gold">&#x1F3E6;</div>
-          <h3>Crédito</h3>
+        <div class="business-card">
+          <div class="icon">&#x1F4C8;</div>
+          <h3>Relatórios</h3>
           <p>
-            Crédito informacional lastreado em dados. Limites
-            calculados pelo engine de valuation com garantias criptográficas.
+            Relatórios periódicos de commodities, risco macro e transição energética
+            para tomada de decisão executiva.
           </p>
         </div>
       </div>
@@ -172,88 +414,45 @@
 
   <hr class="divider">
 
-  <!-- ═══ ECONOMIA GLOCAL PREVIEW ═══ -->
-  <section class="section">
+  <!-- ═══ SEGURANÇA / SELF-HOSTED ═══ -->
+  <section class="section security-section">
     <div class="container">
       <div class="section-header reveal">
-        <span class="badge badge-gold">Monitoramento</span>
-        <h2 style="margin-top:16px">Economia Glocal</h2>
+        <span class="badge badge-accent">Segurança & Privacidade</span>
+        <h2 style="margin-top:16px">Self-hosted. Você controla seus dados.</h2>
         <p>
-          Vetores macro e microeconômicos processados em tempo real
-          pelo Motor de Inferência Analógica. Global + Local.
-        </p>
-      </div>
-
-      <div class="grid-4 stagger">
-        <div class="card">
-          <h4>&#x1F30D; Eventos Climáticos</h4>
-          <p class="text-sm text-muted" style="margin:8px 0 12px">
-            Transição energética, minerais renováveis, carbono
-          </p>
-          <div data-chart="mini-sparkline"></div>
-          <span class="mono text-xs text-accent">6 vetores</span>
-        </div>
-        <div class="card">
-          <h4>&#x1F3D7; Infraestrutura</h4>
-          <p class="text-sm text-muted" style="margin:8px 0 12px">
-            Data centers, cobre, 5G, fibra óptica
-          </p>
-          <div data-chart="mini-sparkline"></div>
-          <span class="mono text-xs text-accent">7 vetores</span>
-        </div>
-        <div class="card">
-          <h4>&#x1F4BB; Chips</h4>
-          <p class="text-sm text-muted" style="margin:8px 0 12px">
-            Gálio, germânio, GPUs, controle de exportação
-          </p>
-          <div data-chart="mini-sparkline"></div>
-          <span class="mono text-xs text-accent">8 vetores</span>
-        </div>
-        <div class="card">
-          <h4>&#x26CF; Terras Raras</h4>
-          <p class="text-sm text-muted" style="margin:8px 0 12px">
-            REEs, desdolarização, BRICS, ouro, câmbio
-          </p>
-          <div data-chart="mini-sparkline"></div>
-          <span class="mono text-xs text-accent">20 vetores</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <hr class="divider">
-
-  <!-- ═══ ECOSISTEMA ═══ -->
-  <section class="section">
-    <div class="container">
-      <div class="section-header reveal">
-        <span class="badge badge-accent">Ecossistema</span>
-        <h2 style="margin-top:16px">Hubstry</h2>
-        <p>
-          O Data Bank faz parte de um ecossistema integrado de
-          segurança, infraestrutura e inovação.
+          O DataBank roda no seu próprio ambiente. Não há cloud proprietária, não há coleta de dados
+          do usuário e não há risco de exposição a terceiros.
         </p>
       </div>
 
       <div class="grid-3 stagger">
-        <a href="https://www.overall.xyz" target="_blank" rel="noopener" class="eco-card">
-          <span class="badge badge-gold eco-badge">Ecossistema</span>
-          <h3>Overall.xyz</h3>
-          <p>Plataforma central do ecossistema Hubstry. Visão integrada de todos os projetos e iniciativas.</p>
-          <span class="eco-link">www.overall.xyz &rarr;</span>
-        </a>
-        <a href="https://github.com/guilherme-machado-ceo/hubstry-security" target="_blank" rel="noopener" class="eco-card">
-          <span class="badge badge-accent eco-badge">Segurança</span>
-          <h3>Hubstry Security</h3>
-          <p>Infraestrutura pós-quântica: ML-KEM, ML-DSA, SLH-DSA, HSL Auth, detecção de intrusão e compliance.</p>
-          <span class="eco-link">GitHub &rarr;</span>
-        </a>
-        <a href="https://github.com/guilherme-machado-ceo/DataBank-Fintech" target="_blank" rel="noopener" class="eco-card">
-          <span class="badge badge-accent eco-badge">Fintech</span>
-          <h3>Data Bank</h3>
-          <p>Fintech de dados com custódia, valuation, monetização e crédito informacional. Este repositório.</p>
-          <span class="eco-link">GitHub &rarr;</span>
-        </a>
+        <div class="card card-glow">
+          <div class="card-icon">&#x1F3E0;</div>
+          <h3>Roda local</h3>
+          <p>
+            Instale na sua máquina, servidor ou VPS. O cache SQLite fica sob seu controle.
+          </p>
+        </div>
+        <div class="card card-glow">
+          <div class="card-icon">&#x1F512;</div>
+          <h3>Zero risco LGPD</h3>
+          <p>
+            Não processamos dados pessoais nem dados corporativos sensíveis. Apenas indicadores macro e de mercado públicos.
+          </p>
+        </div>
+        <div class="card card-glow">
+          <div class="card-icon">&#x1F6E1;</div>
+          <h3>Sem backdoor</h3>
+          <p>
+            Código aberto auditável. Nenhuma telemetria oculta, nenhum acesso remoto não autorizado.
+          </p>
+        </div>
+      </div>
+
+      <div class="alert alert-info container-narrow reveal" style="margin-top:48px">
+        <strong>Criptografia opcional.</strong> O repositório inclui experimentos de criptografia clássica
+        e pós-quântica para quem quiser estudar ou estender. Não é um produto de segurança oferecido comercialmente.
       </div>
     </div>
   </section>
@@ -262,14 +461,17 @@
   <footer class="footer">
     <div class="container">
       <div class="footer-left">
-        <span class="footer-logo">Data Bank</span>
-        <span class="footer-copy">&copy; 2026 Guilherme Gon&ccedil;alves Machado. Todos os direitos reservados.</span>
+        <span class="footer-logo">DataBank</span>
+        <span class="footer-copy">Hubstry Deep Tech — Guilherme Gonçalves Machado — 2026</span>
+        <span class="footer-license">
+          Código licenciado sob Apache 2.0 · Marca e identidade visual protegidos por direitos autorais.
+        </span>
       </div>
       <div class="footer-links">
-        <a href="pqc.html">PQC</a>
         <a href="algorithm.html">Algoritmo</a>
+        <a href="https://databank-fintech-demo.streamlit.app" target="_blank" rel="noopener">Dashboard</a>
+        <a href="https://github.com/guilherme-machado-ceo/DataBank-Fintech" target="_blank" rel="noopener">GitHub</a>
         <a href="contact.html">Contato</a>
-        <a href="https://github.com/guilherme-machado-ceo/DataBank-Fintech" target="_blank">GitHub</a>
       </div>
     </div>
   </footer>
