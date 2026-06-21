@@ -60,16 +60,13 @@ def fetch_coingecko(coin="bitcoin", dias=120):
         logging.warning(f"CoinGecko {coin} falhou: {e}")
         return None
 
-def fetch_meteo(lat, lon, days=120):
+def fetch_meteo(lat, lon, days=92):
     try:
         url = "https://api.open-meteo.com/v1/forecast"
-        from datetime import datetime, timedelta
-        end = datetime.now().strftime("%Y-%m-%d")
-        start = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
         params = {
             "latitude": lat, "longitude": lon,
             "daily": "temperature_2m_max",
-            "start_date": start, "end_date": end, "timezone": "auto",
+            "past_days": min(days, 92), "timezone": "auto",
         }
         r = requests.get(url, params=params, timeout=30)
         r.raise_for_status()
@@ -84,9 +81,6 @@ def fetch_meteo(lat, lon, days=120):
         logging.warning(f"Open-Meteo falhou: {e}")
         return None
 
-# =========================================================
-# MAIN
-# =========================================================
 def main():
     print("\n" + "=" * 70)
     print("  DATABANK PCQ v3 — Fusion Edition [DADOS REAIS]")
