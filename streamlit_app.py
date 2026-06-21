@@ -12,7 +12,7 @@ from src.core.campos_granulares import REGISTRO_CAMPOS
 from src.ingestion.real_data import IngestorReal
 
 
-APP_TITLE = "Data Bank – Dashboard de Vetores Reais"
+APP_TITLE = "DataBank — Inteligência de Mercado para PMEs"
 LOGO_PATH = Path("logo-databank.png")
 
 SECTOR_PROFILES = {
@@ -26,10 +26,10 @@ SECTOR_PROFILES = {
 
 REVENUE_LINES = {
     "Assinatura SaaS": 0.10,
-    "Comissão de monetização": 0.18,
-    "Relatórios e Score-as-a-Service": 0.08,
-    "Custódia e tokenização": 0.07,
-    "Crédito informacional": 0.14,
+    "Consultoria e análise": 0.18,
+    "Relatórios sob demanda": 0.08,
+    "Integração e API": 0.07,
+    "Treinamento e suporte": 0.14,
 }
 
 
@@ -53,7 +53,7 @@ def build_demo_dataset() -> pd.DataFrame:
                 12500, 18800, 32100, 22100, 27800,
                 14100, 20100, 35400, 24500, 30100,
             ] * 5,
-            "score_relacionamento": [72, 88, 91, 77, 84, 69, 86, 94, 81, 89] * 5,
+            "indice_relacionamento": [72, 88, 91, 77, 84, 69, 86, 94, 81, 89] * 5,
             "consentimento_lgpd": [True, True, True, False, True, True, False, True, True, True] * 5,
             "regiao": ["Sul", "Sudeste", "Nordeste", "Centro-Oeste", "Norte"] * 10,
         }
@@ -97,73 +97,73 @@ def normalize(value: float, lower: float, upper: float) -> float:
     return 100 * (clipped - lower) / (upper - lower)
 
 
-def calculate_scores(metrics: DatasetMetrics, sector: str, governance_level: int) -> dict[str, float]:
+def calculate_quality_index(metrics: DatasetMetrics, sector: str, governance_level: int) -> dict[str, float]:
     profile = SECTOR_PROFILES[sector]
-    volume_score = normalize(metrics.rows * metrics.columns, 100, 250_000)
-    quality_score = metrics.completeness - min(metrics.duplicates / max(metrics.rows, 1) * 45, 25)
-    diversity_score = normalize(metrics.columns + metrics.numeric_columns * 1.5, 3, 60)
-    governance_score = governance_level
-    demand_score = profile["market_demand"]
-    privacy_penalty = profile["privacy_risk"] * (1 - governance_level / 100)
+    volume_index = normalize(metrics.rows * metrics.columns, 100, 250_000)
+    quality_index = metrics.completeness - min(metrics.duplicates / max(metrics.rows, 1) * 45, 25)
+    diversity_index = normalize(metrics.columns + metrics.numeric_columns * 1.5, 3, 60)
+    governance_index = governance_level
+    demand_index = profile["market_demand"]
+    privacy_risk = profile["privacy_risk"] * (1 - governance_level / 100)
 
-    asset_score = (
-        volume_score * 0.22
-        + quality_score * 0.24
-        + diversity_score * 0.16
-        + governance_score * 0.18
-        + demand_score * 0.20
-        - privacy_penalty * 0.12
+    overall_index = (
+        volume_index * 0.22
+        + quality_index * 0.24
+        + diversity_index * 0.16
+        + governance_index * 0.18
+        + demand_index * 0.20
+        - privacy_risk * 0.12
     )
 
     return {
-        "Score de volume": round(volume_score, 1),
-        "Score de qualidade": round(max(0, quality_score), 1),
-        "Score de diversidade": round(diversity_score, 1),
-        "Score de governança": round(governance_score, 1),
-        "Demanda de mercado": round(demand_score, 1),
-        "Risco residual LGPD": round(max(0, privacy_penalty), 1),
-        "Data Asset Score": round(max(0, min(asset_score, 100)), 1),
+        "Volume": round(volume_index, 1),
+        "Qualidade": round(max(0, quality_index), 1),
+        "Diversidade": round(diversity_index, 1),
+        "Governança": round(governance_index, 1),
+        "Demanda de mercado": round(demand_index, 1),
+        "Risco residual de privacidade": round(max(0, privacy_risk), 1),
+        "Índice geral": round(max(0, min(overall_index, 100)), 1),
     }
 
 
-def estimate_valuation(metrics: DatasetMetrics, scores: dict[str, float], sector: str, revenue_potential: float) -> dict[str, float]:
+def estimate_value(metrics: DatasetMetrics, quality_metrics: dict[str, float], sector: str, revenue_potential: float) -> dict[str, float]:
     profile = SECTOR_PROFILES[sector]
     density_factor = max(metrics.numeric_columns + metrics.categorical_columns * 0.55, 1)
     base_value = metrics.rows * density_factor * profile["base_multiplier"] * 2.85
-    quality_premium = 1 + scores["Data Asset Score"] / 100
+    quality_premium = 1 + quality_metrics["Índice geral"] / 100
     revenue_signal = revenue_potential * 0.018
-    fair_value = base_value * quality_premium + revenue_signal
-    tokenizable_value = fair_value * 0.62
-    credit_limit = fair_value * (0.18 + scores["Score de governança"] / 500)
+    projected_value = base_value * quality_premium + revenue_signal
+    potential_value = projected_value * 0.62
+    financial_projection = projected_value * (0.18 + quality_metrics["Governança"] / 500)
 
     return {
-        "valuation": round(fair_value, 2),
-        "tokenizable_value": round(tokenizable_value, 2),
-        "credit_limit": round(credit_limit, 2),
+        "projected_value": round(projected_value, 2),
+        "potential_value": round(potential_value, 2),
+        "financial_projection": round(financial_projection, 2),
     }
 
 
-def render_score_radar(scores: dict[str, float]) -> None:
+def render_quality_radar(quality_metrics: dict[str, float]) -> None:
     radar_rows = [
-        {"Dimensão": key, "Score": value}
-        for key, value in scores.items()
-        if key not in ("Data Asset Score", "Risco residual LGPD")
+        {"Dimensão": key, "Valor": value}
+        for key, value in quality_metrics.items()
+        if key not in ("Índice geral", "Risco residual de privacidade")
     ]
     chart = (
         alt.Chart(pd.DataFrame(radar_rows))
         .mark_bar(cornerRadiusTopLeft=6, cornerRadiusTopRight=6)
         .encode(
             x=alt.X("Dimensão:N", sort=None, axis=alt.Axis(labelAngle=-25)),
-            y=alt.Y("Score:Q", scale=alt.Scale(domain=[0, 100])),
+            y=alt.Y("Valor:Q", scale=alt.Scale(domain=[0, 100])),
             color=alt.Color("Dimensão:N", legend=None),
-            tooltip=["Dimensão", alt.Tooltip("Score:Q", format=".1f")],
+            tooltip=["Dimensão", alt.Tooltip("Valor:Q", format=".1f")],
         )
         .properties(height=320)
     )
     st.altair_chart(chart, use_container_width=True)
 
 
-def render_revenue_projection(valuation: float, months: int) -> None:
+def render_revenue_projection(projected_value: float, months: int) -> None:
     rows = []
     for month in range(1, months + 1):
         maturity = min(1, 0.18 + month / months)
@@ -172,7 +172,7 @@ def render_revenue_projection(valuation: float, months: int) -> None:
                 {
                     "Mês": month,
                     "Fonte": line,
-                    "Receita projetada": valuation * share * maturity / 12,
+                    "Receita projetada": projected_value * share * maturity / 12,
                 }
             )
 
@@ -190,8 +190,8 @@ def render_revenue_projection(valuation: float, months: int) -> None:
     st.altair_chart(chart, use_container_width=True)
 
 
-def render_compliance_checklist(scores: dict[str, float], sector: str) -> None:
-    risk = scores["Risco residual LGPD"]
+def render_compliance_checklist(quality_metrics: dict[str, float], sector: str) -> None:
+    risk = quality_metrics["Risco residual de privacidade"]
     checklist = pd.DataFrame(
         [
             {
@@ -205,13 +205,13 @@ def render_compliance_checklist(scores: dict[str, float], sector: str) -> None:
                 "Prioridade": "Alta",
             },
             {
-                "Controle": "Logs de auditoria e trilhas de custódia",
-                "Status": "OK" if scores["Score de governança"] >= 70 else "Atenção",
+                "Controle": "Logs de auditoria e trilhas de governança",
+                "Status": "OK" if quality_metrics["Governança"] >= 70 else "Atenção",
                 "Prioridade": "Média",
             },
             {
                 "Controle": "Política de retenção e descarte",
-                "Status": "OK" if scores["Score de qualidade"] >= 75 else "Atenção",
+                "Status": "OK" if quality_metrics["Qualidade"] >= 75 else "Atenção",
                 "Prioridade": "Média",
             },
         ]
@@ -292,7 +292,7 @@ def main() -> None:
         if LOGO_PATH.exists():
             st.image(str(LOGO_PATH), width=130)
         st.title("Data Bank")
-        st.caption("Protótipo Streamlit para valuation, score, monetização e crédito de dados.")
+        st.caption("Dashboard open source de commodities, macroeconomia e transição energética. 17 vetores reais, 49 catalogados.")
 
         uploaded_file = st.file_uploader(
             "Carregue um dataset",
@@ -309,47 +309,47 @@ def main() -> None:
         )
         projection_months = st.slider("Horizonte de projeção", 6, 36, 18)
 
-    st.title("🏦 Data Bank – Dashboard de Vetores Reais")
+    st.title("🏦 DataBank — Inteligência de Mercado para PMEs")
     st.markdown(
         "Painel de honestidade radical: cada vetor do catálogo mostra sua **fonte real**, "
         "**valor atual** e **última atualização**. Sem simulações mascaradas."
     )
 
-    tab_vetores, tab_overview, tab_score, tab_finance, tab_compliance, tab_data = st.tabs(
-        ["Vetores Reais", "Visão geral", "Score", "Monetização", "Governança", "Dataset"]
+    tab_vetores, tab_overview, tab_analysis, tab_finance, tab_compliance, tab_data = st.tabs(
+        ["Vetores Reais", "Visão geral", "Análise", "Projeção", "Conformidade", "Dataset"]
     )
 
     with tab_vetores:
         render_vetores_reais()
 
-    # Aba de valuation/simulação mantida com avisos claros
+    # Aba de projeção/simulação mantida com avisos claros
     if uploaded_file is not None:
         df = load_uploaded_dataset(uploaded_file)
         dataset_source = f"Dataset carregado: {uploaded_file.name}"
     else:
         df = build_demo_dataset()
-        dataset_source = "Dataset demonstrativo do Data Bank"
+        dataset_source = "Dataset demonstrativo do DataBank"
 
     metrics = calculate_dataset_metrics(df)
-    scores = calculate_scores(metrics, sector, governance_level)
-    valuation = estimate_valuation(metrics, scores, sector, revenue_potential)
+    quality_metrics = calculate_quality_index(metrics, sector, governance_level)
+    value_projection = estimate_value(metrics, quality_metrics, sector, revenue_potential)
 
     with tab_overview:
         st.info(dataset_source)
         st.warning(
-            "As métricas abaixo são uma **simulação de valuation** baseada em regras arbitrárias. "
+            "As métricas abaixo são uma **simulação ilustrativa** baseada em regras arbitrárias. "
             "Não representam laudo financeiro, jurídico ou contábil."
         )
 
         kpi_cols = st.columns(4)
         with kpi_cols[0]:
-            st.metric("Data Asset Score", f"{scores['Data Asset Score']:.1f}/100")
+            st.metric("Índice geral", f"{quality_metrics['Índice geral']:.1f}/100")
         with kpi_cols[1]:
-            st.metric("Valuation estimado", f"R$ {valuation['valuation']:,.2f}")
+            st.metric("Valor estimado (simulado)", f"R$ {value_projection['projected_value']:,.2f}")
         with kpi_cols[2]:
-            st.metric("Valor tokenizável", f"R$ {valuation['tokenizable_value']:,.2f}")
+            st.metric("Valor potencial (simulado)", f"R$ {value_projection['potential_value']:,.2f}")
         with kpi_cols[3]:
-            st.metric("Limite de crédito", f"R$ {valuation['credit_limit']:,.2f}")
+            st.metric("Projeção financeira (simulada)", f"R$ {value_projection['financial_projection']:,.2f}")
 
         st.subheader("Resumo operacional")
         c1, c2, c3, c4 = st.columns(4)
@@ -362,21 +362,21 @@ def main() -> None:
         with c4:
             st.metric("Tamanho estimado", f"{metrics.estimated_size_mb:.2f} MB")
 
-    with tab_score:
-        st.subheader("Score proprietário de ativos de dados")
+    with tab_analysis:
+        st.subheader("Análise qualitativa do dataset")
         left, right = st.columns([2, 1])
         with left:
-            render_score_radar(scores)
+            render_quality_radar(quality_metrics)
         with right:
-            st.metric("Risco residual LGPD", f"{scores['Risco residual LGPD']:.1f}/100")
-            st.metric("Demanda de mercado", f"{scores['Demanda de mercado']:.1f}/100")
+            st.metric("Risco residual de privacidade", f"{quality_metrics['Risco residual de privacidade']:.1f}/100")
+            st.metric("Demanda de mercado", f"{quality_metrics['Demanda de mercado']:.1f}/100")
             st.metric("Duplicidades", f"{metrics.duplicates:,}")
-            st.caption("Pontuação simulada para pré-MVP.")
+            st.caption("Pontuação ilustrativa do dataset.")
 
     with tab_finance:
-        st.subheader("Projeção de monetização")
-        render_revenue_projection(valuation["valuation"], projection_months)
-        st.subheader("Fontes de receita simuladas")
+        st.subheader("Projeção de receita (simulada)")
+        render_revenue_projection(value_projection["projected_value"], projection_months)
+        st.subheader("Fontes de receita ilustrativas")
         revenue_table = pd.DataFrame(
             [
                 {"Fonte": line, "Participação estimada": f"{share * 100:.0f}%"}
@@ -386,10 +386,10 @@ def main() -> None:
         st.dataframe(revenue_table, use_container_width=True, hide_index=True)
 
     with tab_compliance:
-        st.subheader("Governança, custódia e conformidade")
-        render_compliance_checklist(scores, sector)
+        st.subheader("Governança e conformidade")
+        render_compliance_checklist(quality_metrics, sector)
         st.warning(
-            "Este painel é uma simulação para descoberta de produto. A análise LGPD definitiva exige "
+            "Este painel é uma simulação ilustrativa. A análise LGPD definitiva exige "
             "inventário de dados, base legal, DPO/jurídico e trilhas de auditoria reais."
         )
 
