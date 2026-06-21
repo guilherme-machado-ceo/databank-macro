@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PQC — Segurança Pós-Quântica | Data Bank</title>
+  <meta name="description" content="Proteção contra ataques Harvest Now, Decrypt Later com algoritmos PQC aprovados pelo NIST. ML-KEM-768, ML-DSA-65, SLH-DSA.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%230a0a0f'/><text x='50' y='62' text-anchor='middle' font-size='48' font-family='sans-serif' font-weight='800' fill='%2300d4aa'>D</text></svg>">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ═══ NAVBAR ═══ -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="nav-logo">
+        <span class="logo-icon">D</span>
+        Data Bank
+      </a>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="pqc.html" class="active">PQC</a>
+        <a href="algorithm.html">Algoritmo</a>
+        <a href="contact.html" class="nav-cta">Contato</a>
+      </div>
+      <button class="nav-toggle" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ═══ HERO ═══ -->
+  <section class="hero-inner">
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-label">
+          <span class="pulse"></span>
+          NIST FIPS 203 / 204 / 205
+        </div>
+        <h1>Segurança <span class="text-gradient">Pós-Quântica</span> Nativa</h1>
+        <p>
+          Cada dataset custodiado, cada token emitido, cada contrato inteligente
+          no Data Bank é protegido por criptografia resistente a computadores
+          quânticos. Não é uma feature. É a fundação.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ AMEAÇA HNDL ═══ -->
+  <section class="section-sm">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="badge badge-error">A Ameaça</span>
+        <h2 style="margin-top:16px">Harvest Now, Decrypt Later</h2>
+        <p>
+          A ameaça não é teórica. Adversários já estão armazenando dados
+          criptografados para descriptografá-los quando computadores
+          quânticos atingirem capacidade suficiente.
+        </p>
+      </div>
+
+      <div class="timeline reveal" style="max-width:700px; margin:0 auto">
+        <div class="timeline-item">
+          <div class="timeline-year">2024 — HOJE</div>
+          <h4>Coleta Ativa</h4>
+          <p>Adversários interceptam e armazenam tráfego criptografado com RSA e ECC. Dados financeiros, de saúde e governamentais são prioridade.</p>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-year">2025 — 2030</div>
+          <h4>Armazenamento Estratégico</h4>
+          <p>Dados coletados ficam em repouso aguardando o avanço da computação quântica. Investimentos bilionários em P&D de computadores quânticos aceleram a corrida.</p>
+        </div>
+        <div class="timeline-item danger">
+          <div class="timeline-year">~2035 — Q-DAY ESTIMADO</div>
+          <h4>Rompe Criptografia Clássica</h4>
+          <p>Mais de 50% de probabilidade de quebra de RSA-2048 por computadores quânticos. Algoritmos ECC e DH igualmente comprometidos pelo algoritmo de Shor.</p>
+        </div>
+        <div class="timeline-item danger">
+          <div class="timeline-year">PÓS-Q-DAY</div>
+          <h4>Dados Expostos</h4>
+          <p>Tudo que foi coletado durante o período HNDL se torna legível. Informações que deveriam permanecer secretas por décadas são expostas.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ═══ ALGORITMOS NIST ═══ -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="badge badge-accent">Padrão NIST</span>
+        <h2 style="margin-top:16px">Algoritmos PQC</h2>
+        <p>
+          Utilizamos exclusivamente algoritmos aprovados pelo NIST
+          nos padrões FIPS 203, 204 e 205, publicados em 2024.
+        </p>
+      </div>
+
+      <div class="table-wrapper reveal">
+        <table>
+          <thead>
+            <tr>
+              <th>Função</th>
+              <th>Algoritmo</th>
+              <th>Padrão NIST</th>
+              <th>Base Matemática</th>
+              <th>Uso no Data Bank</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Encapsulamento de Chaves</td>
+              <td><strong>ML-KEM-768</strong></td>
+              <td>FIPS 203</td>
+              <td>Reticulados (Module-LWE)</td>
+              <td>Proteção de chaves de sessão de datasets</td>
+            </tr>
+            <tr>
+              <td>Assinatura Digital</td>
+              <td><strong>ML-DSA-65</strong></td>
+              <td>FIPS 204</td>
+              <td>Reticulados (Module-LWE)</td>
+              <td>Assinatura de datasets, tokens e smart contracts</td>
+            </tr>
+            <tr>
+              <td>Assinatura Hash-Based</td>
+              <td><strong>SLH-DSA-128s</strong></td>
+              <td>FIPS 205</td>
+              <td>Funções hash (stateless)</td>
+              <td>Backup — diversidade criptográfica</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="alert alert-info container-narrow reveal" style="margin-top:32px">
+        <strong>Por que três algoritmos?</strong>
+        Diversidade criptográfica. Se uma base matemática for comprometida,
+        as outras permanecem seguras. ML-KEM e ML-DSA são baseados em
+        reticulados; SLH-DSA é baseado em hash — famílias independentes.
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ═══ PIPELINE DE PROTEÇÃO ═══ -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="badge badge-accent">Pipeline</span>
+        <h2 style="margin-top:16px">Como Protegemos Seus Dados</h2>
+        <p>
+          Cada dataset passa por um pipeline completo de proteção
+          antes de ser custodiado no Data Bank.
+        </p>
+      </div>
+
+      <div class="flow reveal stagger" style="margin-bottom:48px">
+        <div class="flow-step">
+          <div class="step-icon">&#x1F4E4;</div>
+          <span class="step-label">Upload</span>
+          <span class="step-sub">Dataset enviado<br>via API segura</span>
+        </div>
+        <span class="flow-arrow">&#x2192;</span>
+        <div class="flow-step">
+          <div class="step-icon">&#x1F50D;</div>
+          <span class="step-label">Classifica</span>
+          <span class="step-sub">Sensibilidade e<br>exposição quântica</span>
+        </div>
+        <span class="flow-arrow">&#x2192;</span>
+        <div class="flow-step">
+          <div class="step-icon">&#x1F510;</div>
+          <span class="step-label">Encapsula</span>
+          <span class="step-sub">Chave de sessão via<br>ML-KEM-768</span>
+        </div>
+        <span class="flow-arrow">&#x2192;</span>
+        <div class="flow-step">
+          <div class="step-icon">&#x270D;</div>
+          <span class="step-label">Assina</span>
+          <span class="step-sub">Integridade via<br>ML-DSA-65</span>
+        </div>
+        <span class="flow-arrow">&#x2192;</span>
+        <div class="flow-step">
+          <div class="step-icon">&#x1F3DB;</div>
+          <span class="step-label">Armazena</span>
+          <span class="step-sub">Custódia segura<br>com audit log</span>
+        </div>
+        <span class="flow-arrow">&#x2192;</span>
+        <div class="flow-step">
+          <div class="step-icon">&#x1F504;</div>
+          <span class="step-label">Re-criptografa</span>
+          <span class="step-sub">Antes do fim da<br>validade quântica</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ═══ COMPARATIVO ═══ -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="badge badge-gold">Comparativo</span>
+        <h2 style="margin-top:16px">Segurança Quântica por Algoritmo</h2>
+        <p>
+          Bits de segurança efetivos contra ataques quânticos
+          (algoritmo de Shor e de Grover).
+        </p>
+      </div>
+
+      <div class="container-narrow reveal">
+        <div class="compare-bar">
+          <div class="bar-label">
+            <span>RSA-2048 (legado)</span>
+            <span class="mono text-error">0 bits quânticos</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill error" data-width="2%"></div>
+          </div>
+        </div>
+        <div class="compare-bar">
+          <div class="bar-label">
+            <span>ECC P-256 (legado)</span>
+            <span class="mono text-error">0 bits quânticos</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill error" data-width="2%"></div>
+          </div>
+        </div>
+        <div class="compare-bar">
+          <div class="bar-label">
+            <span>AES-128 (Grover reduz pela metade)</span>
+            <span class="mono text-gold">64 bits quânticos</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill gold" data-width="43%"></div>
+          </div>
+        </div>
+        <div class="compare-bar">
+          <div class="bar-label">
+            <span>AES-256 (Grover reduz pela metade)</span>
+            <span class="mono text-gold">128 bits quânticos</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill gold" data-width="85%"></div>
+          </div>
+        </div>
+        <div class="compare-bar">
+          <div class="bar-label">
+            <strong>ML-KEM-768 (Data Bank)</strong>
+            <span class="mono text-accent">192 bits quânticos</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill accent" data-width="100%"></div>
+          </div>
+        </div>
+        <div class="compare-bar">
+          <div class="bar-label">
+            <strong>ML-DSA-65 (Data Bank)</strong>
+            <span class="mono text-accent">192 bits quânticos</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill accent" data-width="100%"></div>
+          </div>
+        </div>
+        <div class="compare-bar">
+          <div class="bar-label">
+            <strong>SLH-DSA-128s (Data Bank)</strong>
+            <span class="mono text-accent">128 bits quânticos</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill accent" data-width="85%"></div>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-muted text-sm text-center reveal" style="margin-top:32px">
+        RSA e ECC possuem 0 bits de segurança quântica — o algoritmo de Shor os quebra
+        completamente em tempo polinomial.
+      </p>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ═══ HUBSTRY SECURITY ═══ -->
+  <section class="section-sm">
+    <div class="container" style="text-align:center">
+      <div class="reveal">
+        <span class="badge badge-accent">Integração</span>
+        <h2 style="margin:16px 0">Hubstry Security</h2>
+        <p style="max-width:600px; margin:0 auto 32px; color:var(--text-muted)">
+          A infraestrutura PQC do Data Bank é integrada ao repositório
+          Hubstry Security, que fornece ML-KEM, ML-DSA, SLH-DSA,
+          HSL Auth, detecção de intrusão e compliance NIS2/NIST/ISO.
+        </p>
+        <a href="https://github.com/guilherme-machado-ceo/hubstry-security"
+           target="_blank" rel="noopener" class="btn btn-outline">
+          Ver Hubstry Security no GitHub &rarr;
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ CTA ═══ -->
+  <section class="section-sm" style="text-align:center">
+    <div class="container reveal">
+      <h2>Proteja seus dados agora.</h2>
+      <p style="color:var(--text-muted); margin:16px auto 32px; max-width:500px">
+        A janela de vulnerabilidade HNDL está aberta. Cada dia sem
+        proteção pós-quântica é um dia a mais de exposição.
+      </p>
+      <a href="contact.html" class="btn btn-primary btn-lg">Fale Conosco</a>
+    </div>
+  </section>
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-left">
+        <span class="footer-logo">Data Bank</span>
+        <span class="footer-copy">&copy; 2026 Guilherme Gon&ccedil;alves Machado.</span>
+      </div>
+      <div class="footer-links">
+        <a href="index.html">Home</a>
+        <a href="pqc.html">PQC</a>
+        <a href="algorithm.html">Algoritmo</a>
+        <a href="contact.html">Contato</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/animations.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
