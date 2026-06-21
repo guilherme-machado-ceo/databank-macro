@@ -1,6 +1,6 @@
-# README atualizado com acentos e estado real
+# README 
 
-Cole este bloco inteiro no editor do GitHub (lápis ✏️):
+
 
 ```markdown
 # DataBank-Fintech
