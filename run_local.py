@@ -63,11 +63,13 @@ def fetch_coingecko(coin="bitcoin", dias=120):
 def fetch_meteo(lat, lon, days=120):
     try:
         url = "https://api.open-meteo.com/v1/forecast"
-        # daily deve ser lista na API Open-Meteo
+        from datetime import datetime, timedelta
+        end = datetime.now().strftime("%Y-%m-%d")
+        start = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
         params = {
             "latitude": lat, "longitude": lon,
             "daily": "temperature_2m_max",
-            "past_days": days, "timezone": "auto",
+            "start_date": start, "end_date": end, "timezone": "auto",
         }
         r = requests.get(url, params=params, timeout=30)
         r.raise_for_status()
