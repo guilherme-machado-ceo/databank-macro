@@ -63,7 +63,7 @@ def fetch_coingecko(coin="bitcoin", dias=120):
 def fetch_meteo(lat, lon, days=120):
     try:
         url = "https://api.open-meteo.com/v1/forecast"
-        r = requests.get(url, params={"latitude":lat,"longitude":lon,"daily":"temperature_2m_max","past_days":days,"timezone":"auto"}, timeout=30)
+        r = requests.get(url, params={"latitude":lat,"longitude":lon,"daily":["temperature_2m_max"],"past_days":days,"timezone":"auto"}, timeout=30)
         df = pd.DataFrame(r.json()["daily"])
         df["time"] = pd.to_datetime(df["time"])
         return df.set_index("time")["temperature_2m_max"].sort_index()
