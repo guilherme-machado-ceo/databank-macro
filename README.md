@@ -1,213 +1,110 @@
-DataBank PCQ v3 — Fusion Edition
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3.12-blue?logo=python" alt="Python 3.12">
-  <img src="https://img.shields.io/badge/pytest-9%20passed-brightgreen?logo=pytest" alt="pytest passing">
-  <img src="https://img.shields.io/badge/PCQ-HNDL-orange" alt="PCQ-HNDL">
-  <img src="https://img.shields.io/badge/41%20Vetores-4%20Campos-purple" alt="41 Vetores">
-  <img src="https://img.shields.io/badge/License-Apache%202.0-blue" alt="License">
-</p>
-<p align="center">
-  <b>Post-Quantum Custody · Harvest Now, Decrypt Later</b><br>
-  <b>Economia Glocal · Soberania Tecnológica · Deep Tech</b>
-</p>
-<p align="center">
-  <a href="https://guilherme-machado-ceo.github.io/DataBank-Fintech/">🌐 Site GitHub Pages</a> •
-  <a href="https://github.com/guilherme-machado-ceo/DataBank-Fintech">📦 Repositório</a> •
-  <a href="#instalação">⚡ Instalação</a> •
-  <a href="#arquitetura">🏛️ Arquitetura</a>
-</p>
-🎯 Visão
-O DataBank PCQ é a primeira instituição brasileira de custódia, valuation e monetização de dados empresariais operando sob o paradigma Harvest Now, Decrypt Later (HNDL).
-Harvest: Coleta dados valiosos de 41 vetores econômicos glocais
-Encrypt: Protege com criptografia pós-quântica (Kyber1024 + Dilithium5)
-Store: Custódia em cold storage air-gapped + blockchain de registro
-Decrypt Later: Decifração no Q-Day para análise quântica avançada
-Monetize: Tokenização DREX, crédito informacional, marketplace de dados
-"O DataBank não é apenas uma fintech. É uma instituição de soberania tecnológica e informacional do Brasil."
-— Guilherme Gonçalves Machado, Hubstry Deep Tech
-🏛️ Arquitetura de 6 Camadas
-plain
-┌─────────────────────────────────────────────────────────────┐
-│  CAMADA 6: MONETIZAÇÃO                                      │
-│  ├── Tokenização DREX / Real Digital                        │
-│  ├── Crédito Informacional (Score PCQ)                      │
-│  ├── Marketplace de Dados Pós-Quânticos                     │
-│  └── Liquidação via PIX + Smart Contracts                     │
-├─────────────────────────────────────────────────────────────┤
-│  CAMADA 5: INTELIGÊNCIA & VALUATION                         │
-│  ├── INFLEx — Detecção de Inflexões (CUSUM + Hilbert)       │
-│  ├── ANAMORF — Analogia Semiótica (PCA + KNN)               │
-│  ├── FLUXUS — Ciclo de Valorização Contínua                 │
-│  ├── IA Simbólica + IA Generativa (Hubstry Core)            │
-│  └── Predictive Analytics Quântico (pre-Q-Day)              │
-├─────────────────────────────────────────────────────────────┤
-│  CAMADA 4: CUSTÓDIA PCQ (HNDL)                              │
-│  ├── Criptografia Híbrida: RSA-4096 + CRYSTALS-Kyber1024  │
-│  ├── Assinaturas: ECDSA-P384 + CRYSTALS-Dilithium5          │
-│  ├── AES-256-GCM para dados em repouso                      │
-│  ├── Cold Storage Air-Gapped + Multi-Sig                    │
-│  └── Blockchain de Registro (prova de existência)           │
-├─────────────────────────────────────────────────────────────┤
-│  CAMADA 3: GOVERNANÇA & COMPLIANCE                          │
-│  ├── Scanner ECA Digital (8 Pilares + Pilar 9 PCQ)        │
-│  ├── LGPD / GDPR / CCPA Compliance                          │
-│  ├── Consentimento Granular e Revogável                   │
-│  ├── Pseudonimização e Anonimização                         │
-│  └── Auditoria Contínua (Hubstry Compliance)                │
-├─────────────────────────────────────────────────────────────┤
-│  CAMADA 2: INGESTÃO & ETL                                   │
-│  ├── Open Finance APIs (Bacen)                              │
-│  ├── Alpha Vantage (Forex, Commodities, Índices)            │
-│  ├── Open-Meteo (Dados Climáticos)                          │
-│  ├── Web Scraping Geopolítico + IoT                         │
-│  └── ETL com Pseudonimização Automática                     │
-├─────────────────────────────────────────────────────────────┤
-│  CAMADA 1: VETORES ECONÔMICOS GLOCAL (41 vetores)          │
-│  ├── CAMPO I — Clássicos: Câmbio, Ouro, Petróleo, Juros    │
-│  ├── CAMPO II — Tecnológicos: Chips, Semicondutores, 5G    │
-│  ├── CAMPO III — Geopolíticos: BRICS, Yuan/DREX, Sanções   │
-│  └── CAMPO IV — Climáticos: Eventos Extremos, Safra, Infra │
-└─────────────────────────────────────────────────────────────┘
-📡 Os 4 Campos Granulares (41 Vetores)
+DataBank PCQ v3 -- Fusion Edition
+Post-Quantum Custody | Harvest Now, Decrypt Later | Economia Glocal | Soberania Tecnologica
+Site GitHub Pages | Repositorio
+Visao
+O DataBank PCQ e a primeira instituicao brasileira de custodia, valuation e monetizacao de dados empresariais operando sob o paradigma Harvest Now, Decrypt Later (HNDL).
+Harvest: Coleta dados valiosos de 41 vetores economicos glocais via APIs reais (BCB, Yahoo Finance, CoinGecko, Open-Meteo)
+Encrypt: Protege com criptografia pos-quantica (Kyber1024 + Dilithium5)
+Store: Custodia em cold storage air-gapped + blockchain de registro
+Decrypt Later: Decifracao no Q-Day para analise quantica avancada
+Monetize: Tokenizacao DREX, credito informacional, marketplace de dados
+"O DataBank nao e apenas uma fintech. E uma instituicao de soberania tecnologica e informacional do Brasil."
+-- Guilherme Goncalves Machado, Hubstry Deep Tech
+Arquitetura de 6 Camadas
+CAMADA 6 -- Monetizacao: Tokenizacao DREX, Credito Informacional (Score PCQ), Marketplace de Dados Pos-Quanticos, Liquidacao via PIX + Smart Contracts
+CAMADA 5 -- Inteligencia e Valuation: INFLEx (deteccao de inflexoes via CUSUM + Hilbert), ANAMORF (analogia semiotica via PCA + KNN), FLUXUS (ciclo de valorizacao continua), IA Simbolica + IA Generativa (Hubstry Core), Predictive Analytics Quantico (pre-Q-Day)
+CAMADA 4 -- Custodia PCQ (HNDL): Criptografia Hibrida RSA-4096 + CRYSTALS-Kyber1024, Assinaturas ECDSA-P384 + CRYSTALS-Dilithium5, AES-256-GCM para dados em repouso, Cold Storage Air-Gapped + Multi-Sig, Blockchain de Registro (prova de existencia)
+CAMADA 3 -- Governanca e Compliance: Scanner ECA Digital (8 Pilares + Pilar 9 PCQ), LGPD / GDPR / CCPA Compliance, Consentimento Granular e Revogavel, Pseudonimizacao e Anonimizacao, Auditoria Continua (Hubstry Compliance)
+CAMADA 2 -- Ingestao e ETL: Open Finance APIs (Bacen), Alpha Vantage (Forex, Commodities, Indices), Open-Meteo (Dados Climaticos), Web Scraping Geopolitico + IoT, ETL com Pseudonimizacao Automatica
+CAMADA 1 -- Vetores Economicos Glocal (41 vetores):
+CAMPO I -- Climaticos: 6 vetores (temperatura, eventos extremos, transicao energetica, minerais renovaveis, carbono EU, capacidade renovavel)
+CAMPO II -- Infraestrutura: 7 vetores (data centers, cobre, aluminio, 5G, fibra otica, infra digital)
+CAMPO III -- Chips e Semicondutores: 8 vetores (galio, germanio, GPUs, controle exportacao China, fabs, lead time)
+CAMPO IV -- Terras Raras + Desdolarizacao + Classicos: 20 vetores (REEs, yuan, BRICS, USD/BRL, DXY, ouro, brent, BTC, risco geopolitico, litio, cobre, OPEC)
+APIs Reais Utilizadas (Gratuitas)
 Table
-Campo	Vetores	Modo	Conecta com
-CAMPO I — Clima	6	Paralelo	Infraestrutura, Terras Raras
-CAMPO II — Infraestrutura	7	Paralelo	Chips, Terras Raras, Clima
-CAMPO III — Chips	8	Série	Terras Raras, Infraestrutura
-CAMPO IV — Terras Raras + Desdolarização	20	Paralelo	Chips, Infraestrutura, Clima
-Vetores do Campo IV (Desdolarização + Clássicos)
-dolar_reservas_pct, comercio_nao_dolar_pct, contratos_yuan_petroleo
-comercio_intra_brics_usd, usd_brl, dxy_index
-ouro_usd_oz, brent_usd, btc_usd
-geopolitical_risk_idx, conflitos_ativos, reservas_ouro_china_t
-producao_petroleo_opec, preco_cobre_usd_t, preco_litio_usd_kg
-producao_global_ree_t, producao_china_ree_pct, preco_neodimio_usd_kg
-🧠 Os 3 Algoritmos Semióticos
-INFLEx — Inflexão de Vetores Econômicos
-Detecta pontos de inflexão (regime changes) via:
-CUSUM (Cumulative Sum) para mudança de regime
-Transformada de Hilbert para extração de fase
-Thresholds por campo (sensibilidade granular)
-Cascata entre campos (MAPA_CASCATA)
-Modelo Bayesiano para probabilidade final
-ANAMORF — Anamorfose Semiótica de Dados
-Cria embedding latente onde proximidade reflete homologia estrutural:
-HEURÍSTICA: correlação estatística entre vetores
-FUNCIONAL: mesma função econômica (reserva de valor, indicador industrial)
-HOMOLOGIA: estrutura similar (séries + derivadas normalizadas)
-Operação de analogia: A está para B assim como C está para ?
-FLUXUS — Fluxo Contínuo de Valorização
-Ciclo de auto-reforço em 5 fases:
-PESQUISA — Coleta de novos vetores econômicos
-ESTUDO — Análise INFLEx + ANAMORF
-CRIAÇÃO — Geração de ativos de dados (índices compostos)
-ENSINO — Feedback loop para memória analógica
-PRODUÇÃO ECONÔMICA — Tokenização, venda de insights, crédito informacional
-🔐 Criptografia Pós-Quântica (PCQ-HNDL)
+API	Dados	Limite	Key
+BCB (Banco Central BR)	USD/BRL, SELIC	Ilimitado	Nao
+Yahoo Finance (yfinance)	Acoes, commodities, indices	Ilimitado	Nao
+CoinGecko	BTC, ETH, crypto	10-50 calls/min	Nao
+Open-Meteo	Clima global	Ilimitado	Nao
+Alpha Vantage	Forex, commodities	25/dia	Sim (gratis)
+FRED	Dados economicos EUA	120/dia	Sim (gratis)
+Os 3 Algoritmos Semioticos
+INFLEx -- Inflexao de Vetores Economicos: detecta pontos de inflexao (regime changes) via CUSUM (Cumulative Sum) para mudanca de regime, Transformada de Hilbert para extracao de fase, thresholds por campo (sensibilidade granular), cascata entre campos (MAPA_CASCATA), modelo Bayesiano para probabilidade final.
+ANAMORF -- Anamorfose Semiotica de Dados: cria embedding latente onde proximidade reflete homologia estrutural. Tres tipos de analogia: HEURISTICA (correlacao estatistica), FUNCIONAL (mesma funcao economica), HOMOLOGIA (estrutura similar). Operacao: A esta para B assim como C esta para ?
+FLUXUS -- Fluxo Continuo de Valorizacao: ciclo de auto-reforco em 5 fases (Pesquisa, Estudo, Criacao, Ensino, Producao Economica).
+Criptografia Pos-Quantica (PCQ-HNDL)
 Table
 Componente	Algoritmo	Status
-Cifra simétrica	AES-256-GCM	✅ Ativo
-Encapsulamento (clássico)	RSA-4096-OAEP	✅ Ativo
-Assinatura (clássico)	ECDSA-P384	✅ Ativo
-Encapsulamento (PQC)	CRYSTALS-Kyber1024	⚡ Se liboqs-python instalado
-Assinatura (PQC)	CRYSTALS-Dilithium5	⚡ Se liboqs-python instalado
-Validade por sensibilidade	5-30 anos	✅ Ativo
-Cold Storage	Air-gapped + Multi-Sig	✅ Ativo
-Blockchain Registry	Prova de existência	✅ Ativo
-⚡ Instalação
+Cifra simetrica	AES-256-GCM	Ativo
+Encapsulamento (classico)	RSA-4096-OAEP	Ativo
+Assinatura (classico)	ECDSA-P384	Ativo
+Encapsulamento (PQC)	CRYSTALS-Kyber1024	Se liboqs-python instalado
+Assinatura (PQC)	CRYSTALS-Dilithium5	Se liboqs-python instalado
+Validade por sensibilidade	5-30 anos	Ativo
+Cold Storage	Air-gapped + Multi-Sig	Ativo
+Blockchain Registry	Prova de existencia	Ativo
+Instalacao
 bash
-# 1. Clone
+# Clone
 git clone https://github.com/guilherme-machado-ceo/DataBank-Fintech.git
 cd DataBank-Fintech
 
-# 2. Instale dependências
+# Instale dependencias
 pip3 install --break-system-packages -r requirements.txt
 
-# 3. (Opcional) Para ativar PQC real
+# Instale yfinance (dados reais Yahoo Finance)
+pip3 install --break-system-packages yfinance
+
+# Opcional: ativar PQC real
 pip3 install --break-system-packages liboqs-python
 
-# 4. Rode o motor
+# Rode com dados REAIS
 python3 run_local.py
 
-# 5. Rode os testes
+# Testes
 python3 -m pytest tests/test_fusion.py -v
-🚀 Uso
-Rodar o Motor Local
+Uso
+Rodar o Motor com Dados Reais
 bash
 python3 run_local.py
-Output esperado:
-plain
-======================================================================
-  DATABANK PCQ v3 — Fusion Edition
-======================================================================
-
-  Campos granulares: 4
-    CLIMA: 6 vetores
-    INFRAESTRUTURA: 7 vetores
-    CHIPS: 8 vetores
-    TERRAS_RARAS: 20 vetores
-  Total: 41
-
-  OK: 41 vetores instanciados
-  Carteira: 41 vetores
-  Indice Glocal: 0.0000
-
-  Executando ciclo FLUXUS v3...
-
-  Fase 1 — Pesquisa:     0 novos
-  Fase 2 — Estudo:       41 analisados
-  Fase 3 — Criacao:      N ativos (depende dos dados)
-  Fase 4 — Ensino:       N eventos
-  Fase 5 — Producao:     R$ N (simulado)
-  Indice Glocal:         X.XXXX
-  Tempo:                 X.XXs
+Output: coleta USD/BRL do BCB, commodities do Yahoo Finance, crypto do CoinGecko, clima do Open-Meteo, executa INFLEx + ANAMORF + FLUXUS, gera ativos, protege com PCQ.
 Dashboard Streamlit
 bash
 streamlit run src/dashboard/streamlit_app.py
-🧪 Testes
+Testes
 bash
 python3 -m pytest tests/test_fusion.py -v
+test_41_vetores_4_campos: confirma 41 vetores em 4 campos
+test_sensibilidade_por_campo: thresholds adaptativos
+test_inflexao_detecta: INFLEx detecta inflexoes
+test_anamorf_operar: ANAMORF gera analogias
+test_fluxus_ciclo: FLUXUS executa ciclo completo
+test_custodia_proteger: PCQ protege dados com HNDL
+test_miner_5_chains: PCQMiner avalia 5 blockchains
+test_miner_qrl_menor_risco: QRL tem risco quantico zero
+test_dados_para_vetores: converte dados em vetores tensoriais
+Mineracao PCQ
+O PCQMiner avalia 5 blockchains pelo risco pos-quantico:
 Table
-Teste	Descrição
-test_41_vetores_4_campos	Confirma 41 vetores em 4 campos
-test_sensibilidade_por_campo	Thresholds adaptativos por campo
-test_inflexao_detecta	INFLEx detecta inflexões
-test_anamorf_operar	ANAMORF gera analogias
-test_fluxus_ciclo	FLUXUS executa ciclo completo
-test_custodia_proteger	PCQ protege dados com HNDL
-test_miner_5_chains	PCQMiner avalia 5 blockchains
-test_miner_qrl_menor_risco	QRL tem risco quântico zero
-test_dados_para_vetores	Converte dados em vetores tensoriais
-⛏️ Mineração PCQ
-O PCQMiner avalia 5 blockchains pelo risco pós-quântico:
-Table
-#	Chain	Algoritmo	Risco Q	Recomendação
-1	QRL	XMSS	0.00	✅ Minerar
-2	Algorand	EdDSA+FALCON	0.30	✅ Minerar
-3	Solana	EdDSA	0.65	⚠️ Monitorar
-4	Ethereum	ECDSA	0.70	⚠️ Monitorar
-5	Bitcoin	ECDSA	0.75	⚠️ Minerar com precaução
-🌐 Site
-Acesse a documentação visual e interativa:
-🔗 guilherme-machado-ceo.github.io/DataBank-Fintech
-📜 Axioma Autoral
-"Inflexão do pensamento humano incidindo sobre o conjunto universo dos fenômenos, instanciando-se em paralelo ou série em múltiplas áreas do conhecimento, em comparação e contraste sistemáticos operada pela analogia (heurística, funcional ou homologia), em um fluxo contínuo de pesquisa, estudo, criação, ensino e produção econômica."
-— Guilherme Gonçalves Machado
-🏢 Hubstry Deep Tech
-<p align="center">
-  <b>Hubstry Deep Tech</b> — Deep Tech R&D Lab<br>
-  🌐 <a href="https://www.hubstry.dev">hubstry.dev</a> •
-  📧 <a href="mailto:guilhermemachado@hubstry.onmicrosoft.com">guilhermemachado@hubstry.onmicrosoft.com</a> •
-  💼 <a href="https://www.linkedin.com/in/guilhermegoncalvesmachado">LinkedIn</a> •
-  🐙 <a href="https://github.com/guilherme-machado-ceo">GitHub</a>
-</p>
-📄 Licença
-Apache 2.0 — Código aberto. Propriedade intelectual de Guilherme Gonçalves Machado.
-plain
-Copyright 2026 Guilherme Gonçalves Machado / Hubstry Deep Tech
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
+#	Chain	Algoritmo	Risco Q	Recomendacao
+1	QRL	XMSS	0.00	Minerar
+2	Algorand	EdDSA+FALCON	0.30	Minerar
+3	Solana	EdDSA	0.65	Monitorar
+4	Ethereum	ECDSA	0.70	Monitorar
+5	Bitcoin	ECDSA	0.75	Minerar com precaucao
+Site
+guilherme-machado-ceo.github.io/DataBank-Fintech
+Axioma Autoral
+"Inflexao do pensamento humano incidindo sobre o conjunto universo dos fenomenos, instanciando-se em paralelo ou serie em multiplas areas do conhecimento, em comparacao e contraste sistematicos operada pela analogia (heuristica, funcional ou homologia), em um fluxo continuo de pesquisa, estudo, criacao, ensino e producao economica."
+-- Guilherme Goncalves Machado
+Hubstry Deep Tech
+Hubstry Deep Tech -- Deep Tech R&D Lab
+Web: hubstry.dev
+Email: guilhermemachado@hubstry.onmicrosoft.com
+LinkedIn: guilhermegoncalvesmachado
+GitHub: guilherme-machado-ceo
+Licenca
+Apache 2.0 -- Codigo aberto. Propriedade intelectual de Guilherme Goncalves Machado.
+Copyright 2026 Guilherme Goncalves Machado / Hubstry Deep Tech
